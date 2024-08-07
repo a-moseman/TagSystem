@@ -7,27 +7,28 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.amoseman.tagsystem.backend.authentication.User;
+import org.amoseman.tagsystem.backend.dao.EntityDAO;
+import org.amoseman.tagsystem.backend.exception.entity.EntityNotOwnedException;
 import org.amoseman.tagsystem.backend.pojo.EntityRetrievalRequest;
 import org.amoseman.tagsystem.backend.dao.SelectOperator;
 import org.amoseman.tagsystem.backend.exception.entity.EntityDoesNotExistException;
 import org.amoseman.tagsystem.backend.exception.tag.TagDoesNotExistException;
-import org.amoseman.tagsystem.backend.service.EntityService;
 
 import java.util.Locale;
 
 @Path("/entities")
 @Produces(MediaType.APPLICATION_JSON)
 public class EntityResource {
-    private final EntityService entityService;
+    private final EntityDAO entityDAO;
 
-    public EntityResource(EntityService entityService) {
-        this.entityService = entityService;
+    public EntityResource(EntityDAO entityDAO) {
+        this.entityDAO = entityDAO;
     }
 
     @POST
     @PermitAll
     public Response createEntity(@Auth User user) {
-        return Response.ok(entityService.create()).build();
+        return Response.ok(entityDAO.create(user.getName())).build();
     }
 
     @DELETE
@@ -35,11 +36,14 @@ public class EntityResource {
     @PermitAll
     public Response deleteEntity(@Auth User user, @PathParam("uuid") String uuid) {
         try {
-            entityService.deleteEntity(uuid);
+            entityDAO.remove(user.getName(), uuid);
             return Response.ok().build();
         }
         catch (EntityDoesNotExistException e) {
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "entity does not exist").build();
+        }
+        catch (EntityNotOwnedException e) {
+            return Response.status(Response.Status.UNAUTHORIZED.getStatusCode()).build();
         }
     }
 
@@ -56,7 +60,7 @@ public class EntityResource {
             }
         }
         try {
-            ImmutableList<String> result = entityService.retrieveEntities(operator, ImmutableList.copyOf(request.getTags()));
+            ImmutableList<String> result = entityDAO.retrieve(user.getName(), operator, ImmutableList.copyOf(request.getTags()));
             return Response.ok(result).build();
         }
         catch (TagDoesNotExistException e) {
@@ -64,16 +68,36 @@ public class EntityResource {
         }
     }
 
-    @PUT
-    @Path("/{uuid}")
-    @PermitAll
-    public Response setTags(@Auth User user, @PathParam("uuid") String uuid, ImmutableList<String> tags) {
+    @POST
+    @Path("/{uuid}/{tag}")
+    public Response addTag(@Auth User user, @PathParam("uuid") String uuid, @PathParam("tag") String tag) {
         try {
-            entityService.setTags(uuid, tags);
+            entityDAO.addTag(user.getName(), uuid, tag);
             return Response.ok().build();
         }
         catch (TagDoesNotExistException e) {
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "tag does not exist").build();
+        }
+        catch (EntityNotOwnedException e) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        catch (EntityDoesNotExistException e) {
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "entity does not exist").build();
+        }
+    }
+
+    @DELETE
+    @Path("/{uuid}/{tag}")
+    public Response removeTag(@Auth User user, @PathParam("uuid") String uuid, @PathParam("tag") String tag) {
+        try {
+            entityDAO.removeTag(user.getName(), uuid, tag);
+            return Response.ok().build();
+        }
+        catch (TagDoesNotExistException e) {
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "tag does not exist").build();
+        }
+        catch (EntityNotOwnedException e) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         catch (EntityDoesNotExistException e) {
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "entity does not exist").build();
@@ -85,11 +109,14 @@ public class EntityResource {
     @PermitAll
     public Response getTags(@Auth User user, @PathParam("uuid") String uuid) {
         try {
-            ImmutableList<String> tags = entityService.getTags(uuid);
+            ImmutableList<String> tags = entityDAO.getTags(user.getName(), uuid);
             return Response.ok().build();
         }
         catch (EntityDoesNotExistException e) {
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "entity does not exist").build();
+        }
+        catch (EntityNotOwnedException e) {
+            return Response.status(Response.Status.UNAUTHORIZED.getStatusCode()).build();
         }
     }
 }

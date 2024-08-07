@@ -14,14 +14,11 @@ import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.EntityDAO;
 import org.amoseman.tagsystem.backend.dao.TagDAO;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
-import org.amoseman.tagsystem.backend.dao.sql.DatabaseConnection;
-import org.amoseman.tagsystem.backend.dao.sql.DatabaseInitializer;
-import org.amoseman.tagsystem.backend.dao.sql.SQLEntityDAO;
-import org.amoseman.tagsystem.backend.dao.sql.SQLTagDAO;
+import org.amoseman.tagsystem.backend.dao.sql.*;
 import org.amoseman.tagsystem.backend.resources.EntityResource;
 import org.amoseman.tagsystem.backend.resources.TagResource;
-import org.amoseman.tagsystem.backend.service.EntityService;
-import org.amoseman.tagsystem.backend.service.TagService;
+import org.amoseman.tagsystem.backend.resources.UserResource;
+import org.amoseman.tagsystem.backend.service.UserService;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 
 public class TagSystemApplication extends Application<TagSystemConfiguration> {
@@ -35,16 +32,17 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
         initializer.init();
 
         TagDAO tagDAO = new SQLTagDAO(connection);
-        EntityDAO entityDAO = new SQLEntityDAO(connection);
-        UserDAO userDAO = null;
+        EntityDAO entityDAO = new SQLEntityDAO(connection, tagDAO);
+        UserDAO userDAO = new SQLUserDAO(connection);
 
-        TagService tagService = new TagService(tagDAO, entityDAO);
-        EntityService entityService = new EntityService(entityDAO);
+        UserService userService = new UserService(userDAO);
 
-        TagResource tagResource = new TagResource(tagService);
-        EntityResource entityResource = new EntityResource(entityService);
+        TagResource tagResource = new TagResource(tagDAO);
+        EntityResource entityResource = new EntityResource(entityDAO);
+        UserResource userResource = new UserResource(userService);
         environment.jersey().register(tagResource);
         environment.jersey().register(entityResource);
+        environment.jersey().register(userResource);
 
         Authenticator<BasicCredentials, User> authenticator = new BasicAuthenticator(userDAO);
         Authorizer<User> authorizer = new BasicAuthorizer();

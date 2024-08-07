@@ -9,28 +9,27 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.amoseman.tagsystem.backend.authentication.Roles;
 import org.amoseman.tagsystem.backend.authentication.User;
+import org.amoseman.tagsystem.backend.dao.TagDAO;
 import org.amoseman.tagsystem.backend.exception.tag.TagDoesNotExistException;
-import org.amoseman.tagsystem.backend.pojo.Tag;
-import org.amoseman.tagsystem.backend.service.TagService;
-import org.amoseman.tagsystem.backend.exception.entity.EntityDoesNotExistException;
 import org.amoseman.tagsystem.backend.exception.tag.NameInUseException;
+import org.amoseman.tagsystem.backend.exception.tag.TagIsNotChildException;
 
 @Path("/tags")
 @Produces(MediaType.APPLICATION_JSON)
 public class TagResource {
     private static final Response TAG_DNE = Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "tag does not exist").build();
-    private final TagService tagService;
+    private final TagDAO tagDAO;
 
-    public TagResource(TagService tagService) {
-        this.tagService = tagService;
+    public TagResource(TagDAO tagDAO) {
+        this.tagDAO = tagDAO;
     }
 
     @POST
     @RolesAllowed({Roles.ADMIN})
     public Response createTag(@Auth User user, String name) {
         try {
-            String id = tagService.createTag(name);
-            return Response.ok(id).build();
+            tagDAO.create(name);
+            return Response.ok().build();
         }
         catch (NameInUseException e) {
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "tag name already in use").build();
@@ -38,54 +37,53 @@ public class TagResource {
     }
 
     @DELETE
-    @Path("/{id}")
+    @Path("/{name}")
     @RolesAllowed({Roles.ADMIN})
-    public Response deleteTag(@Auth User user, @PathParam("id") String id) {
+    public Response deleteTag(@Auth User user, @PathParam("name") String name) {
         try {
-            tagService.deleteTag(id);
+            tagDAO.delete(name);
             return Response.ok().build();
         }
         catch (TagDoesNotExistException e) {
             return TAG_DNE;
         }
-        catch (EntityDoesNotExistException e) {
-            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "entity does not exist").build();
-        }
     }
 
-    @GET
-    @Path("/{id}")
-    @PermitAll
-    public Response retrieveTag(@Auth User user, @PathParam("id") String id) {
-        try {
-            Tag tag = tagService.retrieveTag(id);
-            return Response.ok(tag).build();
-        }
-        catch (TagDoesNotExistException e) {
-            return TAG_DNE;
-        }
-    }
-
-    @GET
-    @Path("/{id}/tree")
-    @PermitAll
-    public Response tree(@Auth User user, @PathParam("id") String id) {
-        try {
-            ImmutableList<String> tree = tagService.tree(id);
-            return Response.ok(tree).build();
-        }
-        catch (TagDoesNotExistException e) {
-            return TAG_DNE;
-        }
-    }
-
-    @PUT
-    @Path("/{id}")
+    @POST
+    @Path("/{parent}/{child}")
     @RolesAllowed({Roles.ADMIN})
-    public Response setTags(@Auth User user, @PathParam("id") String id, ImmutableList<String> children) {
+    public Response addChild(@Auth User user, @PathParam("name") String parent, @PathParam("child") String child) {
         try {
-            tagService.setChildren(id, children);
+            tagDAO.addChild(parent, child);
             return Response.ok().build();
+        }
+        catch (TagDoesNotExistException e) {
+            return TAG_DNE;
+        }
+    }
+
+    @DELETE
+    @Path("/{parent}/{child}")
+    @RolesAllowed({Roles.ADMIN})
+    public Response removeChild(@Auth User user, @PathParam("name") String parent, @PathParam("child") String child) {
+        try {
+            tagDAO.removeChild(parent, child);
+            return Response.ok().build();
+        }
+        catch (TagDoesNotExistException e) {
+            return TAG_DNE;
+        }
+        catch (TagIsNotChildException e) {
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "passed child tag is not child of passed parent tag").build();
+        }
+    }
+
+    @GET
+    @Path("/{name}")
+    @PermitAll
+    public Response getChildren(@Auth User user, @PathParam("name") String name) {
+        try {
+            return Response.ok(tagDAO.getChildren(name)).build();
         }
         catch (TagDoesNotExistException e) {
             return TAG_DNE;
@@ -95,7 +93,7 @@ public class TagResource {
     @GET
     @PermitAll
     public Response list(@Auth User user) {
-        ImmutableList<String> tags = tagService.listAll();
+        ImmutableList<String> tags = tagDAO.listAll();
         return Response.ok(tags).build();
     }
 }

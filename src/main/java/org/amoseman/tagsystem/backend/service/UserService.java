@@ -2,6 +2,7 @@ package org.amoseman.tagsystem.backend.service;
 
 import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
+import org.amoseman.tagsystem.backend.exception.user.UserDoesNotExistException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class UserService {
         return userDAO.getPassword(username);
     }
 
-    public void setRoles(String username, Set<String> roles) {
-        userDAO.setRoles(username, roles);
+    public void setRole(String username, String role) throws UserDoesNotExistException {
+        userDAO.setRole(username, role);
     }
 }
