@@ -1,68 +1,88 @@
 package org.amoseman.tagsystem.frontend;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class Fetch {
-    private final String domain;
-    private final String username;
-    private final String password;
+    private final CloseableHttpClient client;
+    private String domain;
+    private String auth;
 
-    public Fetch(String domain, String username, String password) {
+    public Fetch() {
+        this.client = HttpClientBuilder.create().build();
+    }
+
+    public Fetch setDomain(String domain) {
         this.domain = domain;
-        this.username = username;
-        this.password = password;
+        return this;
     }
 
-    public Response call(String path, String method) {
-        HttpURLConnection connection = getConnection(domain, path, method);
+    public Fetch setAuth(String username, String password) {
+        String joined = String.format("%s:%s", username, password);
+        String base64 = Base64.getEncoder().encodeToString(joined.getBytes(StandardCharsets.UTF_8));
+        this.auth = String.format("Basic %s", base64);
+        return this;
+    }
+
+    private String formatRequest(String request) {
+        return String.format("%s/%s", domain, request);
+    }
+
+
+    public String get(String request, ResponseHandler<String> handler) {
+        HttpGet get = new HttpGet(formatRequest(request));
+        get.addHeader("Authorization", auth);
         try {
-            int status = connection.getResponseCode();
-            BufferedReader reader;
-            if (status > 299) {
-                reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
-            }
-            else {
-                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            }
-            String message = connection.getResponseMessage();
-            String content = getContent(reader);
-            return new Response(status, message, content);
+            return client.execute(get, handler);
         }
-        catch (Exception e) {
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-
-    private String getContent(BufferedReader reader) {
+    public String get(String request, String entity, ResponseHandler<String> handler) {
+        HttpGetWithEntity get = new HttpGetWithEntity();
+        get.setURI(URI.create(formatRequest(request)));
+        get.addHeader("Authorization", auth);
         try {
-            StringBuilder content = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line);
-            }
-            reader.close();
-            return content.toString();
+            get.setEntity(new StringEntity(entity));
+            return client.execute(get, handler);
         }
-        catch (Exception e) {
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private HttpURLConnection getConnection(String domain, String path, String method) {
+    public String post(String request, ResponseHandler<String> handler) {
+        HttpPost post = new HttpPost(formatRequest(request));
+        post.addHeader("Authorization", auth);
         try {
-            URL url = new URL(domain + path);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod(method);
-            connection.setRequestProperty("Authorization", "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8)));
-            return connection;
+            return client.execute(post, handler);
         }
-        catch (Exception e) {
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String delete(String request, ResponseHandler<String> handler) {
+        HttpDelete delete = new HttpDelete(formatRequest(request));
+        delete.addHeader("Authorization", auth);
+        try {
+            return client.execute(delete, handler);
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

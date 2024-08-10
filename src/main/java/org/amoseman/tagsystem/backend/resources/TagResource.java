@@ -25,8 +25,9 @@ public class TagResource {
     }
 
     @POST
+    @Path("/{name}")
     @RolesAllowed({Roles.ADMIN})
-    public Response createTag(@Auth User user, String name) {
+    public Response createTag(@Auth User user, @PathParam("name") String name) {
         try {
             tagDAO.create(name);
             return Response.ok().build();
@@ -52,7 +53,7 @@ public class TagResource {
     @POST
     @Path("/{parent}/{child}")
     @RolesAllowed({Roles.ADMIN})
-    public Response addChild(@Auth User user, @PathParam("name") String parent, @PathParam("child") String child) {
+    public Response addChild(@Auth User user, @PathParam("parent") String parent, @PathParam("child") String child) {
         try {
             tagDAO.addChild(parent, child);
             return Response.ok().build();

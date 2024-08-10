@@ -50,6 +50,7 @@ public class EntityResource {
 
     @GET
     @PermitAll
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response retrieve(@Auth User user, EntityRetrievalRequest request) {
         SelectOperator operator;
         switch (request.getOperator().toUpperCase(Locale.ROOT)) {

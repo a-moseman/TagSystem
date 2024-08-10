@@ -42,7 +42,7 @@ public class DatabaseInitializer {
                 .column(field("owner"), VARCHAR(36))
                 .column(field("uuid"), VARCHAR(36))
                 .constraints(
-                        primaryKey(field("owner_uuid")),
+                        primaryKey(field("owner")),
                         unique(field("uuid"))
                 )
                 .execute();
@@ -51,6 +51,7 @@ public class DatabaseInitializer {
                 .createTableIfNotExists("entity_tags")
                 .column(field("entity"), VARCHAR(36))
                 .column(field("tag"), VARCHAR(32))
+                .column(field("owner"), VARCHAR(36))
                 .constraints(
                         primaryKey(field("entity"))
                 )

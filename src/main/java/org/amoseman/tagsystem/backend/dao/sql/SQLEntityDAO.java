@@ -17,8 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.table;
+import static org.jooq.impl.DSL.*;
 
 public class SQLEntityDAO implements EntityDAO {
     private static final Table<Record> ENTITIES = table("entities");
@@ -31,7 +30,11 @@ public class SQLEntityDAO implements EntityDAO {
     }
 
     private boolean owns(String owner, String uuid) {
-        return 1 == connection.context().selectFrom(table("tags")).where(field("owner").eq(owner).and(field("uuid").eq(uuid))).fetch().size();
+        return 1 == connection.context()
+                .selectFrom(table("entities"))
+                .where(field("owner").eq(owner).and(field("uuid").eq(uuid)))
+                .fetch()
+                .size();
     }
 
     @Override
@@ -68,54 +71,59 @@ public class SQLEntityDAO implements EntityDAO {
 
     @Override
     public ImmutableList<String> retrieve(String owner, SelectOperator operator, ImmutableList<String> tags) throws TagDoesNotExistException {
-        ImmutableList<String> effectiveTags = effectiveTags(tags);
-        Condition condition = getCondition(owner, operator, effectiveTags);
+        ImmutableList<TagGroup> tagGroups = effectiveTags(tags);
+        Condition condition = getCondition(owner, operator, tagGroups);
         Result<Record> result = connection.context()
-                .selectFrom(ENTITIES)
+                .selectFrom("entity_tags")
                 .where(condition)
                 .fetch();
         List<String> entities = new ArrayList<>();
         result.forEach(record -> {
-            String uuid = record.get(field("uuid"), String.class);
+            String uuid = record.get(field("entity"), String.class);
             entities.add(uuid);
         });
         return ImmutableList.copyOf(entities);
     }
 
-    private ImmutableList<String> effectiveTags(ImmutableList<String> rootTags) {
-        List<String> tags = new ArrayList<>(rootTags);
+    private ImmutableList<TagGroup> effectiveTags(ImmutableList<String> rootTags) {
+        List<TagGroup> groups = new ArrayList<>();
         for (String tag : rootTags) {
-            effectiveTagsHelper(tags, tag);
+            List<String> group = new ArrayList<>();
+            effectiveTagsHelper(group, tag);
+            groups.add(new TagGroup(ImmutableList.copyOf(group)));
         }
-        return ImmutableList.copyOf(tags);
+        return ImmutableList.copyOf(groups);
     }
 
-    private void effectiveTagsHelper(List<String> tags, String tag) {
-        if (tags.contains(tag)) {
-            return;
-        }
-        tags.add(tag);
+    private void effectiveTagsHelper(List<String> group, String tag) {
         Result<Record> result = connection.context()
                 .selectFrom(table("tag_children"))
                 .where(field("parent").eq(tag))
                 .fetch();
-        result.forEach(record -> effectiveTagsHelper(tags, record.get(field("child"), String.class)));
+        result.forEach(record -> effectiveTagsHelper(group, record.get(field("child"), String.class)));
+        if (group.contains(tag)) {
+            return;
+        }
+        group.add(tag);
     }
 
-    private Condition getCondition(String owner, SelectOperator operator, ImmutableList<String> tags) {
-        Condition condition = DSL.trueCondition();
-        switch (operator) {
+    private Condition getCondition(String owner, SelectOperator operator, ImmutableList<TagGroup> groups) {
+        Condition condition = switch (operator) {
             case UNION -> {
-                for (String tag : tags) {
-                    condition = condition.or(field("tags").contains(tag));
+                condition = DSL.falseCondition();
+                for (TagGroup group : groups) {
+                    condition = condition.or(group.asCondition());
                 }
+                yield condition;
             }
             case INTERSECTION -> {
-                for (String tag : tags) {
-                    condition = condition.and(field("tags").contains(tag));
+                condition = DSL.trueCondition();
+                for (TagGroup group : groups) {
+                    condition = condition.and(group.asCondition());
                 }
+                yield condition;
             }
-        }
+        };
         return condition.and(field("owner").eq(owner));
     }
 
@@ -131,11 +139,13 @@ public class SQLEntityDAO implements EntityDAO {
                 .insertInto(
                         table("entity_tags"),
                         field("entity"),
-                        field("tag")
+                        field("tag"),
+                        field("owner")
                 )
                 .values(
                         uuid,
-                        tag
+                        tag,
+                        owner
                 )
                 .execute();
         if (0 == result) {
