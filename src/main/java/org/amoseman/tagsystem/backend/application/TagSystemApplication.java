@@ -66,5 +66,8 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
         );
         environment.jersey().register(RolesAllowedDynamicFeature.class);
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(User.class));
+
+
+        environment.healthChecks().register("application", new ApplicationHealthCheck(connection));
     }
 }

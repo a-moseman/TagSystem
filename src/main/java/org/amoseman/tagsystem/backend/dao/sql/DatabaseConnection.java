@@ -9,20 +9,26 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DatabaseConnection {
+    private final Connection connection;
     private final DSLContext context;
 
     private DatabaseConnection(Connection connection) {
+        this.connection = connection;
         this.context = DSL.using(connection, SQLDialect.SQLITE);
     }
 
     public static DatabaseConnection generate(String url) {
         try {
-            Connection connection = DriverManager.getConnection(url);
-            return new DatabaseConnection(connection);
+             Connection connection  = DriverManager.getConnection(url);
+             return new DatabaseConnection(connection);
         }
         catch (SQLException e) {
             return null;
         }
+    }
+
+    public Connection getConnection() {
+        return connection;
     }
 
     public DSLContext context() {
