@@ -9,8 +9,7 @@ import org.apache.http.util.EntityUtils;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.io.*;
 import java.security.SecureRandom;
@@ -22,6 +21,7 @@ import java.util.Base64;
 import static org.jooq.impl.DSL.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class TagSystemApplicationTest {
 
     private void generateTestConfigFile() {
@@ -53,8 +53,6 @@ class TagSystemApplicationTest {
     }
 
     private void initializeAdmin() {
-
-
         Connection connection = null;
         try {
             connection = DriverManager.getConnection("jdbc:sqlite:test-tagsystem.db");
@@ -71,56 +69,81 @@ class TagSystemApplicationTest {
                 .values("admin", hash, Base64.getEncoder().encodeToString(salt), "ADMIN")
                 .execute();
     }
-    @BeforeEach
+
+    @Order(1)
+    @Test
     void setUp() {
         generateTestConfigFile();
         runApplication();
         initializeAdmin();
     }
 
+    private static ResponseHandler<String> test = response -> {
+        StatusLine line = response.getStatusLine();
+        int code = line.getStatusCode();
+        if (code > 299) {
+            System.out.println(line.getReasonPhrase());
+        }
+        assertEquals(200, code);
+        return EntityUtils.toString(response.getEntity());
+    };
+    private static Fetch fetch = new Fetch()
+            .setDomain("http://127.0.0.1:8080")
+            .setAuth("admin", "admin");
+    private static String uuid;
+
+    @Order(2)
     @Test
-    void run() {
-        ResponseHandler<String> test = response -> {
-            StatusLine line = response.getStatusLine();
-            int code = line.getStatusCode();
-            if (code > 299) {
-                System.out.println(line.getReasonPhrase());
-            }
-            assertEquals(200, code);
-            return EntityUtils.toString(response.getEntity());
-        };
+    void testCreateEntity() {
+        uuid = fetch.post("/entities", test);
+    }
 
-        Fetch fetch = new Fetch()
-                .setDomain("http://127.0.0.1:8080")
-                .setAuth("admin", "admin");
-
-
-        // create entity
-        String uuid = fetch.post("/entities", test);
-        // create tags
+    @Order(3)
+    @Test
+    void testCreateTags() {
         fetch.post("/tags/animal", test);
         fetch.post("/tags/reptile", test);
         fetch.post("/tags/mammal", test);
         fetch.post("/tags/feline", test);
-        // set parent/child relationships
+    }
+
+    @Order(4)
+    @Test
+    void testTagInheritance() {
         fetch.post("/tags/animal/mammal", test);
         fetch.post("/tags/mammal/feline", test);
-        // tag entity
+    }
+
+    @Order(5)
+    @Test
+    void testEntityTagging() {
         fetch.post(String.format("/entities/%s/%s", uuid, "mammal"), test);
-        // retrieval
-        String json = "{\n" +
-                "  \"operator\": \"INTERSECTION\",\n" +
-                "  \"tags\": [\n" +
-                "    \"animal\"\n" +
-                "  ]\n" +
-                "}";
+    }
+
+    private static String json = "{\n" +
+            "  \"operator\": \"INTERSECTION\",\n" +
+            "  \"tags\": [\n" +
+            "    \"animal\"\n" +
+            "  ]\n" +
+            "}";
+    @Order(6)
+    @Test
+    void testEntityRetrieval() {
         String entities = fetch.get("/entities", json, test);
         assertTrue(entities.contains(uuid));
-        // tag deletion
+    }
+
+    @Order(7)
+    @Test
+    void testTagDeletion() {
         fetch.delete("/tags/animal", test);
-        entities = fetch.get("/entities", json, test);
+        String entities = fetch.get("/entities", json, test);
         assertFalse(entities.contains(uuid));
-        // entity deletion
+    }
+
+    @Order(8)
+    @Test
+    void testEntityDeletion() {
         fetch.delete(String.format("/entities/%s", uuid), test);
         fetch.get(String.format("/entities/%s", uuid), response -> {
             assertEquals(401, response.getStatusLine().getStatusCode());

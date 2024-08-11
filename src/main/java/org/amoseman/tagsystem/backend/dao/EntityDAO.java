@@ -30,7 +30,7 @@ public interface EntityDAO {
      * @param tags the IDs of the tags to retrieve by.
      * @return the entities retrieved.
      */
-    ImmutableList<String> retrieve(String owner, SelectOperator operator, ImmutableList<String> tags) throws TagDoesNotExistException;
+    ImmutableList<String> retrieve(String owner, SelectOperator operator, ImmutableList<String> tags);
 
     void addTag(String owner, String uuid, String tag) throws EntityDoesNotExistException, TagDoesNotExistException, EntityNotOwnedException;
     void removeTag(String owner, String uuid, String tag) throws EntityDoesNotExistException, TagDoesNotExistException, EntityNotOwnedException;

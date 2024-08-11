@@ -60,13 +60,8 @@ public class EntityResource {
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "invalid select operator").build();
             }
         }
-        try {
-            ImmutableList<String> result = entityDAO.retrieve(user.getName(), operator, ImmutableList.copyOf(request.getTags()));
-            return Response.ok(result).build();
-        }
-        catch (TagDoesNotExistException e) {
-            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "tag does not exist").build();
-        }
+        ImmutableList<String> result = entityDAO.retrieve(user.getName(), operator, ImmutableList.copyOf(request.getTags()));
+        return Response.ok(result).build();
     }
 
     @POST

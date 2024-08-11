@@ -70,7 +70,7 @@ public class SQLEntityDAO implements EntityDAO {
     }
 
     @Override
-    public ImmutableList<String> retrieve(String owner, SelectOperator operator, ImmutableList<String> tags) throws TagDoesNotExistException {
+    public ImmutableList<String> retrieve(String owner, SelectOperator operator, ImmutableList<String> tags) {
         ImmutableList<TagGroup> tagGroups = effectiveTags(tags);
         Condition condition = getCondition(owner, operator, tagGroups);
         Result<Record> result = connection.context()
