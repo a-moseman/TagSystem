@@ -9,9 +9,11 @@ import java.util.Optional;
 
 public class BasicAuthenticator implements Authenticator<BasicCredentials, User> {
     private final UserDAO userDAO;
+    private final Hashing hashing;
 
-    public BasicAuthenticator(UserDAO userDAO) {
+    public BasicAuthenticator(UserDAO userDAO, Hashing hashing) {
         this.userDAO = userDAO;
+        this.hashing = hashing;
     }
 
     @Override
@@ -21,12 +23,14 @@ public class BasicAuthenticator implements Authenticator<BasicCredentials, User>
             return Optional.empty();
         }
         Optional<String> maybePassword = userDAO.getPassword(credentials.getUsername());
-        if (maybePassword.isEmpty()) {
+        Optional<byte[]> maybeSalt = userDAO.getSalt(credentials.getUsername());
+        if (maybePassword.isEmpty() || maybeSalt.isEmpty()) {
             return Optional.empty();
         }
         User user = maybeUser.get();
         String password = maybePassword.get();
-        if (!credentials.getPassword().equals(password)) {
+        byte[] salt = maybeSalt.get();
+        if (!hashing.verify(credentials.getPassword(), salt, password)) {
             return Optional.empty();
         }
         return Optional.of(user);

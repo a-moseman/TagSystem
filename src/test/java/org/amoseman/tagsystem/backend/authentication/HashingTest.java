@@ -12,7 +12,7 @@ class HashingTest {
     void hash() {
         String password = "this_is_a_terrible_password";
         SecureRandom random = new SecureRandom();
-        Hashing hashing = new Hashing(64, 16, random);
+        Hashing hashing = new Hashing(24, 16, random, new Argon2IDConfig(2, 66536, 1));
         byte[] salt = "salt1".getBytes();
         String hash = hashing.hash(password, salt);
         boolean verification = hashing.verify(password, salt, hash);

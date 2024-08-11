@@ -64,6 +64,7 @@ public class DatabaseInitializer {
                 .createTableIfNotExists("users")
                 .column(field("username"), VARCHAR(64))
                 .column(field("password"), VARCHAR(64))
+                .column(field("salt"), VARCHAR(64))
                 .column(field("role"), VARCHAR(64))
                 .constraints(
                         primaryKey(field("username")),

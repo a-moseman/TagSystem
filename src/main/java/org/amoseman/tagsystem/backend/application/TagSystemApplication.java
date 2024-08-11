@@ -8,9 +8,7 @@ import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
 import io.dropwizard.auth.basic.BasicCredentials;
 import io.dropwizard.core.Application;
 import io.dropwizard.core.setup.Environment;
-import org.amoseman.tagsystem.backend.authentication.BasicAuthenticator;
-import org.amoseman.tagsystem.backend.authentication.BasicAuthorizer;
-import org.amoseman.tagsystem.backend.authentication.User;
+import org.amoseman.tagsystem.backend.authentication.*;
 import org.amoseman.tagsystem.backend.dao.EntityDAO;
 import org.amoseman.tagsystem.backend.dao.TagDAO;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
@@ -20,6 +18,8 @@ import org.amoseman.tagsystem.backend.resources.TagResource;
 import org.amoseman.tagsystem.backend.resources.UserResource;
 import org.amoseman.tagsystem.backend.service.UserService;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
+
+import java.security.SecureRandom;
 
 public class TagSystemApplication extends Application<TagSystemConfiguration> {
     public static void main(String... args) throws Exception {
@@ -31,9 +31,11 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
         DatabaseInitializer initializer = new DatabaseInitializer(connection);
         initializer.init();
 
+        Hashing hashing = new Hashing(24, 16, new SecureRandom(), new Argon2IDConfig(2, 66536, 1));
+
         TagDAO tagDAO = new SQLTagDAO(connection);
         EntityDAO entityDAO = new SQLEntityDAO(connection, tagDAO);
-        UserDAO userDAO = new SQLUserDAO(connection);
+        UserDAO userDAO = new SQLUserDAO(connection, hashing);
 
         UserService userService = new UserService(userDAO);
 
@@ -44,7 +46,7 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
         environment.jersey().register(entityResource);
         environment.jersey().register(userResource);
 
-        Authenticator<BasicCredentials, User> authenticator = new BasicAuthenticator(userDAO);
+        Authenticator<BasicCredentials, User> authenticator = new BasicAuthenticator(userDAO, hashing);
         Authorizer<User> authorizer = new BasicAuthorizer();
         environment.jersey().register(new AuthDynamicFeature(
                 new BasicCredentialAuthFilter.Builder<User>()

@@ -1,5 +1,7 @@
 package org.amoseman.tagsystem.backend.application;
 
+import org.amoseman.tagsystem.backend.authentication.Argon2IDConfig;
+import org.amoseman.tagsystem.backend.authentication.Hashing;
 import org.amoseman.tagsystem.frontend.Fetch;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ResponseHandler;
@@ -11,9 +13,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Base64;
 
 import static org.jooq.impl.DSL.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,6 +53,8 @@ class TagSystemApplicationTest {
     }
 
     private void initializeAdmin() {
+
+
         Connection connection = null;
         try {
             connection = DriverManager.getConnection("jdbc:sqlite:test-tagsystem.db");
@@ -56,10 +62,13 @@ class TagSystemApplicationTest {
         catch (SQLException e) {
             fail(e.getMessage());
         }
+        Hashing hashing = new Hashing(24, 16, new SecureRandom(), new Argon2IDConfig(2, 66536, 1));
+        byte[] salt = hashing.salt();
+        String hash = hashing.hash("admin", salt);
         DSLContext context = DSL.using(connection, SQLDialect.SQLITE);
         context
-                .insertInto(table("users"), field("username"), field("password"), field("role"))
-                .values("admin", "admin", "ADMIN")
+                .insertInto(table("users"), field("username"), field("password"), field("salt"), field("role"))
+                .values("admin", hash, Base64.getEncoder().encodeToString(salt), "ADMIN")
                 .execute();
     }
     @BeforeEach

@@ -1,5 +1,6 @@
 package org.amoseman.tagsystem.backend.dao.sql;
 
+import org.amoseman.tagsystem.backend.authentication.Hashing;
 import org.amoseman.tagsystem.backend.authentication.Roles;
 import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
@@ -7,6 +8,7 @@ import org.amoseman.tagsystem.backend.exception.user.UserDoesNotExistException;
 import org.jooq.Record;
 import org.jooq.Result;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.jooq.impl.DSL.field;
@@ -14,9 +16,11 @@ import static org.jooq.impl.DSL.table;
 
 public class SQLUserDAO implements UserDAO {
     private final DatabaseConnection connection;
+    private final Hashing hashing;
 
-    public SQLUserDAO(DatabaseConnection connection) {
+    public SQLUserDAO(DatabaseConnection connection, Hashing hashing) {
         this.connection = connection;
+        this.hashing = hashing;
     }
 
     private Record getRecord(String username) {
@@ -54,10 +58,23 @@ public class SQLUserDAO implements UserDAO {
     }
 
     @Override
+    public Optional<byte[]> getSalt(String username) {
+        Record record = getRecord(username);
+        if (null == record) {
+            return Optional.empty();
+        }
+        String saltString = record.get(field("salt"), String.class);
+        byte[] salt = Base64.getDecoder().decode(saltString);
+        return Optional.of(salt);
+    }
+
+    @Override
     public void addUser(String username, String password) {
+        byte[] salt = hashing.salt();
+        String hash = hashing.hash(password, salt);
         connection.context()
-                .insertInto(table("users"), field("username"), field("password"), field("roles"))
-                .values(username, password, Roles.USER)
+                .insertInto(table("users"), field("username"), field("password"), field("salt"), field("roles"))
+                .values(username, hash, Base64.getEncoder().encodeToString(salt), Roles.USER)
                 .execute();
     }
 

@@ -11,11 +11,13 @@ public class Hashing {
     private final int hashLength;
     private final int saltLength;
     private final SecureRandom random;
+    private final Argon2IDConfig config;
 
-    public Hashing(int hashLength, int saltLength, SecureRandom random) {
+    public Hashing(int hashLength, int saltLength, SecureRandom random, Argon2IDConfig config) {
         this.hashLength = hashLength;
         this.saltLength = saltLength;
         this.random = random;
+        this.config = config;
     }
 
     public byte[] salt() {
@@ -24,18 +26,9 @@ public class Hashing {
         return salt;
     }
 
-    private Argon2Parameters.Builder builder(byte[] salt) {
-        return new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
-                .withVersion(Argon2Parameters.ARGON2_VERSION_13)
-                .withIterations(2)
-                .withMemoryAsKB(66536)
-                .withParallelism(1)
-                .withSalt(salt);
-    }
-
     public String hash(String password, byte[] salt) {
         Argon2BytesGenerator generator = new Argon2BytesGenerator();
-        generator.init(builder(salt).build());
+        generator.init(config.getBuilder(salt).build());
         byte[] hash = new byte[hashLength];
         generator.generateBytes(password.getBytes(StandardCharsets.UTF_8), hash, 0, hashLength);
         return Base64.getEncoder().encodeToString(hash);
