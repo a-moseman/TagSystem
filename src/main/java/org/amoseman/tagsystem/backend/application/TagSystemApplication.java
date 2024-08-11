@@ -31,7 +31,15 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
         DatabaseInitializer initializer = new DatabaseInitializer(connection);
         initializer.init();
 
-        Hashing hashing = new Hashing(24, 16, new SecureRandom(), new Argon2IDConfig(2, 66536, 1));
+        Hashing hashing = new Hashing(
+                configuration.getPasswordHashLength(),
+                configuration.getPasswordSaltLength(),
+                new SecureRandom(),
+                new Argon2IDConfig(
+                        configuration.getHashIterations(),
+                        configuration.getHashMemory(),
+                        configuration.getHashParallelism())
+        );
 
         TagDAO tagDAO = new SQLTagDAO(connection);
         EntityDAO entityDAO = new SQLEntityDAO(connection, tagDAO);

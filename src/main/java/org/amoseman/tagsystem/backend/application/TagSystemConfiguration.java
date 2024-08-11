@@ -11,6 +11,11 @@ public class TagSystemConfiguration extends Configuration {
     private String databaseUsername = "username";
     @NotEmpty
     private String databasePassword = "password";
+    private int passwordHashLength = 24;
+    private int passwordSaltLength = 16;
+    private int hashIterations = 2;
+    private int hashMemory = 66536;
+    private int hashParallelism = 1;
 
     @JsonProperty
     public String getDatabaseURL() {
@@ -25,5 +30,25 @@ public class TagSystemConfiguration extends Configuration {
     @JsonProperty
     public String getDatabasePassword() {
         return databasePassword;
+    }
+
+    public int getPasswordHashLength() {
+        return passwordHashLength;
+    }
+
+    public int getPasswordSaltLength() {
+        return passwordSaltLength;
+    }
+
+    public int getHashIterations() {
+        return hashIterations;
+    }
+
+    public int getHashMemory() {
+        return hashMemory;
+    }
+
+    public int getHashParallelism() {
+        return hashParallelism;
     }
 }
