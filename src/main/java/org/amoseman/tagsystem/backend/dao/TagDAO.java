@@ -8,7 +8,13 @@ import org.amoseman.tagsystem.backend.exception.tag.*;
  */
 public interface TagDAO {
 
+    /**
+     * Check if a tag exists.
+     * @param name the name of the tag.
+     * @return the result of the check.
+     */
     boolean exists(final String name);
+
     /**
      * Create a new tag.
      * @param name the name of the tag.
@@ -23,34 +29,38 @@ public interface TagDAO {
      */
     void delete(final String name) throws TagDoesNotExistException;
 
+
     /**
-     * Add a child tag to a tag.
-      * @param parent the parent tag.
+     * Set the child tag to inherit the parent tag.
+     * @param parent the parent tag.
      * @param child the child tag.
      * @throws TagDoesNotExistException if either tag does not exist.
+     * @throws TagInheritanceLoopException if this would result in an inheritance loop.
+     * @throws TagIsAlreadyChildException if the inheritance already exists.
      */
     void addChild(String parent, String child) throws TagDoesNotExistException, TagInheritanceLoopException, TagIsAlreadyChildException;
 
     /**
-     * Remove a child tag from a parent tag.
+     * Remove the inheritance of the child tag of the parent tag.
      * @param parent the parent tag.
      * @param child the child tag.
      * @throws TagDoesNotExistException if either tag does not exist.
-     * @throws TagIsNotChildException if the child tag is not actual a child of the parent tag.
+     * @throws TagIsNotChildException if the child tag does not inherit the parent tag.
      */
     void removeChild(String parent, String child) throws TagDoesNotExistException, TagIsNotChildException;
 
     /**
-     * Get the first-descendant children tags of the tag.
+     * Get all tags with directly inherit the tag.
      * @param tag the tag.
      * @return the children.
      * @throws TagDoesNotExistException if the tag does not exist.
      */
     ImmutableList<String> getChildren(String tag) throws TagDoesNotExistException;
 
+
     /**
-     * List all tag ids.
-     * @return the tag ids.
+     * List all tags.
+     * @return all tags.
      */
     ImmutableList<String> listAll();
 }
