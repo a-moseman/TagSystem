@@ -135,21 +135,23 @@ public class SQLEntityDAO implements EntityDAO {
         if (!tagDAO.exists(tag)) {
             throw new TagDoesNotExistException(tag);
         }
-        int result = connection.context()
-                .insertInto(
-                        table("entity_tags"),
-                        field("entity"),
-                        field("tag"),
-                        field("owner")
-                )
-                .values(
-                        uuid,
-                        tag,
-                        owner
-                )
-                .execute();
-        if (0 == result) {
-            throw new EntityDoesNotExistException();
+        try {
+            connection.context()
+                    .insertInto(
+                            table("entity_tags"),
+                            field("entity"),
+                            field("tag"),
+                            field("owner")
+                    )
+                    .values(
+                            uuid,
+                            tag,
+                            owner
+                    )
+                    .execute();
+        }
+        catch (Exception e) {
+            throw new EntityDoesNotExistException(); // todo: fix which exception is used
         }
     }
 

@@ -1,10 +1,8 @@
 package org.amoseman.tagsystem.backend.dao.sql;
 
 import com.google.common.collect.ImmutableList;
-import org.amoseman.tagsystem.backend.exception.tag.TagDoesNotExistException;
-import org.amoseman.tagsystem.backend.exception.tag.TagIsNotChildException;
+import org.amoseman.tagsystem.backend.exception.tag.*;
 import org.amoseman.tagsystem.backend.dao.TagDAO;
-import org.amoseman.tagsystem.backend.exception.tag.NameInUseException;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
@@ -36,16 +34,18 @@ public class SQLTagDAO implements TagDAO {
 
     @Override
     public void create(String name) throws NameInUseException {
-        int result = connection.context()
-                .insertInto(
-                        TAGS_TABLE,
-                        NAME_FIELD
-                )
-                .values(
-                        name
-                )
-                .execute();
-        if (0 == result) {
+        try {
+            connection.context()
+                    .insertInto(
+                            TAGS_TABLE,
+                            NAME_FIELD
+                    )
+                    .values(
+                            name
+                    )
+                    .execute();
+        }
+        catch (Exception e) {
             throw new NameInUseException(name);
         }
     }
@@ -76,18 +76,41 @@ public class SQLTagDAO implements TagDAO {
         return ImmutableList.copyOf(children);
     }
 
+    private boolean isChild(String parent, String target) throws TagDoesNotExistException {
+        ImmutableList<String> children = getChildren(parent);
+        for (String child : children) {
+            if (child.equals(target)) {
+                return true;
+            }
+            boolean recursion = isChild(child, target);
+            if (recursion) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
-    public void addChild(String parent, String child) throws TagDoesNotExistException {
+    public void addChild(String parent, String child) throws TagDoesNotExistException, TagInheritanceLoopException, TagIsAlreadyChildException {
         if (!exists(parent)) {
             throw new TagDoesNotExistException(parent);
         }
         if (!exists(child)) {
             throw new TagDoesNotExistException(child);
         }
-        connection.context()
-                .insertInto(table("tag_children"), field("parent"), field("child"))
-                .values(parent, child)
-                .execute();
+        if (isChild(child, parent)) {
+            throw new TagInheritanceLoopException();
+        }
+        try {
+            connection.context()
+                    .insertInto(table("tag_children"), field("parent"), field("child"))
+                    .values(parent, child)
+                    .execute();
+        }
+        catch (Exception e) {
+            throw new TagIsAlreadyChildException();
+        }
+
     }
 
     @Override

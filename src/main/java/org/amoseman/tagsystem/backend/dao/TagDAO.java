@@ -1,9 +1,7 @@
 package org.amoseman.tagsystem.backend.dao;
 
 import com.google.common.collect.ImmutableList;
-import org.amoseman.tagsystem.backend.exception.tag.TagDoesNotExistException;
-import org.amoseman.tagsystem.backend.exception.tag.TagIsNotChildException;
-import org.amoseman.tagsystem.backend.exception.tag.NameInUseException;
+import org.amoseman.tagsystem.backend.exception.tag.*;
 
 /**
  * Represents the interface of a tag data access object.
@@ -31,7 +29,7 @@ public interface TagDAO {
      * @param child the child tag.
      * @throws TagDoesNotExistException if either tag does not exist.
      */
-    void addChild(String parent, String child) throws TagDoesNotExistException;
+    void addChild(String parent, String child) throws TagDoesNotExistException, TagInheritanceLoopException, TagIsAlreadyChildException;
 
     /**
      * Remove a child tag from a parent tag.

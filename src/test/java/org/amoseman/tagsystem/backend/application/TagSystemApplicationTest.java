@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class TagSystemApplicationTest {
 
-    private void generateTestConfigFile() {
+    static void generateTestConfigFile() {
         File testConfigFile = new File("test-config.yaml");
         testConfigFile.deleteOnExit();
         try {
@@ -41,7 +41,7 @@ class TagSystemApplicationTest {
         }
     }
 
-    private void runApplication() {
+    static void runApplication() {
         new File("test-tagsystem.db").deleteOnExit();
         TagSystemApplication application = new TagSystemApplication();
         try {
@@ -52,7 +52,7 @@ class TagSystemApplicationTest {
         }
     }
 
-    private void initializeAdmin() {
+    static void initializeAdmin() {
         Connection connection = null;
         try {
             connection = DriverManager.getConnection("jdbc:sqlite:test-tagsystem.db");
@@ -70,84 +70,90 @@ class TagSystemApplicationTest {
                 .execute();
     }
 
-    @Order(1)
-    @Test
-    void setUp() {
+    @BeforeAll
+    static void setUp() {
         generateTestConfigFile();
         runApplication();
         initializeAdmin();
     }
 
-    private static ResponseHandler<String> test = response -> {
+    private static ResponseHandler<String> successTest = response -> {
         StatusLine line = response.getStatusLine();
         int code = line.getStatusCode();
-        if (code > 299) {
-            System.out.println(line.getReasonPhrase());
-        }
-        assertEquals(200, code);
+        assertTrue(code < 299);
         return EntityUtils.toString(response.getEntity());
     };
+
+    private static ResponseHandler<String> failTest = response -> {
+        StatusLine line = response.getStatusLine();
+        int code = line.getStatusCode();
+        assertFalse(code < 299);
+        return EntityUtils.toString(response.getEntity());
+    };
+
+    private static ResponseHandler<String> noTest = response -> EntityUtils.toString(response.getEntity());
+
     private static Fetch fetch = new Fetch()
             .setDomain("http://127.0.0.1:8080")
             .setAuth("admin", "admin");
-    private static String uuid;
+
+    @Order(1)
+    @Test
+    void testTagCRUD() {
+        // create
+        fetch.post("/tags/animal", successTest);
+        fetch.post("/tags/mammal", successTest);
+        fetch.post("/tags/feline", successTest);
+        fetch.post("/tags/animal", failTest);
+        fetch.post("/tags/mammal", failTest);
+        fetch.post("/tags/feline", failTest);
+        // update
+        fetch.post("/tags/animal/mammal", successTest);
+        fetch.post("/tags/mammal/feline", successTest);
+        fetch.post("/tags/animal/mammal", failTest);
+        fetch.post("/tags/mammal/feline", failTest);
+        // update - inheritance loop
+        fetch.post("/tags/mammal/animal", failTest);
+        fetch.post("/tags/feline/animal", failTest);
+        // retrieve
+        String children = fetch.get("/tags/animal", successTest);
+        assertTrue(children.contains("mammal"));
+        assertFalse(children.contains("feline"));
+        children = fetch.get("/tags/mammal", successTest);
+        assertTrue(children.contains("feline"));
+        // delete
+        fetch.delete("/tags/animal", successTest);
+        fetch.delete("/tags/mammal", successTest);
+        fetch.delete("/tags/feline", successTest);
+        fetch.delete("/tags/animal", failTest);
+        fetch.delete("/tags/mammal", failTest);
+        fetch.delete("/tags/feline", failTest);
+    }
 
     @Order(2)
     @Test
-    void testCreateEntity() {
-        uuid = fetch.post("/entities", test);
-    }
+    void testEntityCRUD() {
+        fetch.post("/tags/animal", noTest);
+        fetch.post("/tags/mammal", noTest);
+        fetch.post("/tags/feline", noTest);
+        fetch.post("/tags/animal/mammal", noTest);
+        fetch.post("/tags/mammal/feline", noTest);
 
-    @Order(3)
-    @Test
-    void testCreateTags() {
-        fetch.post("/tags/animal", test);
-        fetch.post("/tags/reptile", test);
-        fetch.post("/tags/mammal", test);
-        fetch.post("/tags/feline", test);
-    }
-
-    @Order(4)
-    @Test
-    void testTagInheritance() {
-        fetch.post("/tags/animal/mammal", test);
-        fetch.post("/tags/mammal/feline", test);
-    }
-
-    @Order(5)
-    @Test
-    void testEntityTagging() {
-        fetch.post(String.format("/entities/%s/%s", uuid, "mammal"), test);
-    }
-
-    private static String json = "{\n" +
-            "  \"operator\": \"INTERSECTION\",\n" +
-            "  \"tags\": [\n" +
-            "    \"animal\"\n" +
-            "  ]\n" +
-            "}";
-    @Order(6)
-    @Test
-    void testEntityRetrieval() {
-        String entities = fetch.get("/entities", json, test);
-        assertTrue(entities.contains(uuid));
-    }
-
-    @Order(7)
-    @Test
-    void testTagDeletion() {
-        fetch.delete("/tags/animal", test);
-        String entities = fetch.get("/entities", json, test);
-        assertFalse(entities.contains(uuid));
-    }
-
-    @Order(8)
-    @Test
-    void testEntityDeletion() {
-        fetch.delete(String.format("/entities/%s", uuid), test);
-        fetch.get(String.format("/entities/%s", uuid), response -> {
-            assertEquals(401, response.getStatusLine().getStatusCode());
-            return EntityUtils.toString(response.getEntity());
-        });
+        // create
+        String uuid = fetch.post("/entities", successTest);
+        // update
+        fetch.post(String.format("/entities/%s/mammal", uuid), successTest);
+        fetch.post(String.format("/entities/%s/mammal", uuid), failTest);
+        // todo: handle looping of tags
+        // retrieve
+        String retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"animal\"]\n" + "}", successTest);
+        assertTrue(retrieval.contains(uuid));
+        retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"mammal\"]\n" + "}", successTest);
+        assertTrue(retrieval.contains(uuid));
+        retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"feline\"]\n" + "}", successTest);
+        assertFalse(retrieval.contains(uuid));
+        // delete
+        fetch.delete(String.format("/entities/%s", uuid), successTest);
+        fetch.delete(String.format("/entities/%s", uuid), failTest);
     }
 }

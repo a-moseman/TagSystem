@@ -10,9 +10,7 @@ import jakarta.ws.rs.core.Response;
 import org.amoseman.tagsystem.backend.authentication.Roles;
 import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.TagDAO;
-import org.amoseman.tagsystem.backend.exception.tag.TagDoesNotExistException;
-import org.amoseman.tagsystem.backend.exception.tag.NameInUseException;
-import org.amoseman.tagsystem.backend.exception.tag.TagIsNotChildException;
+import org.amoseman.tagsystem.backend.exception.tag.*;
 
 @Path("/tags")
 @Produces(MediaType.APPLICATION_JSON)
@@ -60,6 +58,12 @@ public class TagResource {
         }
         catch (TagDoesNotExistException e) {
             return TAG_DNE;
+        }
+        catch (TagInheritanceLoopException e) {
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "creating this relationship would cause a tag inheritance loop").build();
+        }
+        catch (TagIsAlreadyChildException e) {
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "tag is already child").build();
         }
     }
 
