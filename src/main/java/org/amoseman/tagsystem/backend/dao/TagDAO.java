@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import org.amoseman.tagsystem.backend.exception.tag.*;
 
 /**
- * Represents the interface of a tag data access object.
+ * The interface of a tag data access object.
  */
 public interface TagDAO {
 
