@@ -11,7 +11,7 @@ import static org.jooq.impl.DSL.field;
  * They are all grouped by a parent tag with they inherit.
  */
 public class TagGroup {
-    private ImmutableList<String> tags;
+    private final ImmutableList<String> tags;
 
     /**
      * Instantiate a new tag group.
