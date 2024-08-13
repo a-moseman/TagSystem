@@ -53,7 +53,7 @@ public class DatabaseInitializer {
                 .column(field("tag"), VARCHAR(32))
                 .column(field("owner"), VARCHAR(36))
                 .constraints(
-                        primaryKey(field("entity"))
+                        foreignKey(field("entity")).references(table("entities"), field("uuid"))
                 )
                 .execute();
 

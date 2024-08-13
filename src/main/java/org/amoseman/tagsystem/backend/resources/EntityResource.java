@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Response;
 import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.EntityDAO;
 import org.amoseman.tagsystem.backend.exception.entity.EntityNotOwnedException;
+import org.amoseman.tagsystem.backend.exception.entity.TagAlreadyOnEntityException;
 import org.amoseman.tagsystem.backend.pojo.EntityRetrievalRequest;
 import org.amoseman.tagsystem.backend.dao.RetrievalOperator;
 import org.amoseman.tagsystem.backend.exception.entity.EntityDoesNotExistException;
@@ -72,13 +73,16 @@ public class EntityResource {
             return Response.ok().build();
         }
         catch (TagDoesNotExistException e) {
-            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "tag does not exist").build();
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), String.format("tag %s does not exist", tag)).build();
         }
         catch (EntityNotOwnedException e) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         catch (EntityDoesNotExistException e) {
-            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "entity does not exist").build();
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), String.format("entity %s does not exist", uuid)).build();
+        }
+        catch (TagAlreadyOnEntityException e) {
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), String.format("entity %s already has %s tag", uuid, tag)).build();
         }
     }
 
@@ -106,7 +110,7 @@ public class EntityResource {
     public Response getTags(@Auth User user, @PathParam("uuid") String uuid) {
         try {
             ImmutableList<String> tags = entityDAO.getTags(user.getName(), uuid);
-            return Response.ok().build();
+            return Response.ok(tags).build();
         }
         catch (EntityDoesNotExistException e) {
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "entity does not exist").build();

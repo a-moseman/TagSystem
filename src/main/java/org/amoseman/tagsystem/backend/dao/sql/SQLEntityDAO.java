@@ -3,6 +3,7 @@ package org.amoseman.tagsystem.backend.dao.sql;
 import com.google.common.collect.ImmutableList;
 import org.amoseman.tagsystem.backend.dao.TagDAO;
 import org.amoseman.tagsystem.backend.exception.entity.EntityNotOwnedException;
+import org.amoseman.tagsystem.backend.exception.entity.TagAlreadyOnEntityException;
 import org.amoseman.tagsystem.backend.exception.tag.TagDoesNotExistException;
 import org.amoseman.tagsystem.backend.dao.EntityDAO;
 import org.amoseman.tagsystem.backend.dao.RetrievalOperator;
@@ -128,31 +129,29 @@ public class SQLEntityDAO implements EntityDAO {
     }
 
     @Override
-    public void addTag(String owner, String uuid, String tag) throws EntityDoesNotExistException, TagDoesNotExistException, EntityNotOwnedException {
+    public void addTag(String owner, String uuid, String tag) throws EntityDoesNotExistException, TagDoesNotExistException, EntityNotOwnedException, TagAlreadyOnEntityException {
         if (!owns(owner, uuid)) {
             throw new EntityNotOwnedException(owner, uuid);
         }
         if (!tagDAO.exists(tag)) {
             throw new TagDoesNotExistException(tag);
         }
-        try {
-            connection.context()
-                    .insertInto(
-                            table("entity_tags"),
-                            field("entity"),
-                            field("tag"),
-                            field("owner")
-                    )
-                    .values(
-                            uuid,
-                            tag,
-                            owner
-                    )
-                    .execute();
+        if (getTags(owner, uuid).contains(tag)) {
+            throw new TagAlreadyOnEntityException(uuid, tag);
         }
-        catch (Exception e) {
-            throw new EntityDoesNotExistException(); // todo: fix which exception is used
-        }
+        connection.context()
+                .insertInto(
+                        table("entity_tags"),
+                        field("entity"),
+                        field("tag"),
+                        field("owner")
+                )
+                .values(
+                        uuid,
+                        tag,
+                        owner
+                )
+                .execute();
     }
 
     @Override

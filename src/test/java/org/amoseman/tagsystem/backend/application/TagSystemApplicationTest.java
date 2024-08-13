@@ -80,14 +80,25 @@ class TagSystemApplicationTest {
     private static ResponseHandler<String> successTest = response -> {
         StatusLine line = response.getStatusLine();
         int code = line.getStatusCode();
-        assertTrue(code < 299);
-        return EntityUtils.toString(response.getEntity());
+        boolean condition = code < 299;
+        String result = EntityUtils.toString(response.getEntity());
+        if (!condition) {
+            System.err.println(line.getReasonPhrase());
+            System.err.println(result);
+        }
+
+        assertTrue(condition);
+        return result;
     };
 
     private static ResponseHandler<String> failTest = response -> {
         StatusLine line = response.getStatusLine();
         int code = line.getStatusCode();
-        assertFalse(code < 299);
+        boolean condition = code < 299;
+        if (condition) {
+            System.err.println(line.getReasonPhrase());
+        }
+        assertFalse(condition);
         return EntityUtils.toString(response.getEntity());
     };
 
@@ -136,21 +147,26 @@ class TagSystemApplicationTest {
         fetch.post("/tags/animal", noTest);
         fetch.post("/tags/mammal", noTest);
         fetch.post("/tags/feline", noTest);
+        fetch.post("/tags/reptile", noTest);
         fetch.post("/tags/animal/mammal", noTest);
         fetch.post("/tags/mammal/feline", noTest);
+        fetch.post("/tags/animal/reptile", noTest);
 
         // create
         String uuid = fetch.post("/entities", successTest);
         // update
         fetch.post(String.format("/entities/%s/mammal", uuid), successTest);
         fetch.post(String.format("/entities/%s/mammal", uuid), failTest);
-        // todo: handle looping of tags
+        fetch.post(String.format("/entities/%s/feline", uuid), successTest); // should replace mammal with feline, as feline is more "specific"
+        String tags = fetch.get(String.format("/entities/%s", uuid), successTest);
+        assertFalse(tags.contains("mammal"));
+        assertTrue(tags.contains("feline"));
         // retrieve
         String retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"animal\"]\n" + "}", successTest);
         assertTrue(retrieval.contains(uuid));
         retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"mammal\"]\n" + "}", successTest);
         assertTrue(retrieval.contains(uuid));
-        retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"feline\"]\n" + "}", successTest);
+        retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"reptile\"]\n" + "}", successTest);
         assertFalse(retrieval.contains(uuid));
         // delete
         fetch.delete(String.format("/entities/%s", uuid), successTest);

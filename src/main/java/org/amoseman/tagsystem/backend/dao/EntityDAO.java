@@ -3,6 +3,7 @@ package org.amoseman.tagsystem.backend.dao;
 import com.google.common.collect.ImmutableList;
 import org.amoseman.tagsystem.backend.exception.entity.EntityDoesNotExistException;
 import org.amoseman.tagsystem.backend.exception.entity.EntityNotOwnedException;
+import org.amoseman.tagsystem.backend.exception.entity.TagAlreadyOnEntityException;
 import org.amoseman.tagsystem.backend.exception.tag.TagDoesNotExistException;
 
 /**
@@ -42,7 +43,7 @@ public interface EntityDAO {
      * @throws TagDoesNotExistException if the tag does not exist.
      * @throws EntityNotOwnedException if the entity is not owned by the provided owner.
      */
-    void addTag(String owner, String uuid, String tag) throws EntityDoesNotExistException, TagDoesNotExistException, EntityNotOwnedException;
+    void addTag(String owner, String uuid, String tag) throws EntityDoesNotExistException, TagDoesNotExistException, EntityNotOwnedException, TagAlreadyOnEntityException;
 
     /**
      * Remove a tag from an entity.
