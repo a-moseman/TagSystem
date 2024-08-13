@@ -1,7 +1,7 @@
 package org.amoseman.tagsystem.backend.application;
 
 import org.amoseman.tagsystem.backend.authentication.Argon2IDConfig;
-import org.amoseman.tagsystem.backend.authentication.Hashing;
+import org.amoseman.tagsystem.backend.authentication.Hasher;
 import org.amoseman.tagsystem.frontend.Fetch;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ResponseHandler;
@@ -60,9 +60,9 @@ class TagSystemApplicationTest {
         catch (SQLException e) {
             fail(e.getMessage());
         }
-        Hashing hashing = new Hashing(24, 16, new SecureRandom(), new Argon2IDConfig(2, 66536, 1));
-        byte[] salt = hashing.salt();
-        String hash = hashing.hash("admin", salt);
+        Hasher hasher = new Hasher(24, 16, new SecureRandom(), new Argon2IDConfig(2, 66536, 1));
+        byte[] salt = hasher.salt();
+        String hash = hasher.hash("admin", salt);
         DSLContext context = DSL.using(connection, SQLDialect.SQLITE);
         context
                 .insertInto(table("users"), field("username"), field("password"), field("salt"), field("role"))

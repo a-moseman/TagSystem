@@ -9,11 +9,11 @@ import java.util.Optional;
 
 public class BasicAuthenticator implements Authenticator<BasicCredentials, User> {
     private final UserDAO userDAO;
-    private final Hashing hashing;
+    private final Hasher hasher;
 
-    public BasicAuthenticator(UserDAO userDAO, Hashing hashing) {
+    public BasicAuthenticator(UserDAO userDAO, Hasher hasher) {
         this.userDAO = userDAO;
-        this.hashing = hashing;
+        this.hasher = hasher;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class BasicAuthenticator implements Authenticator<BasicCredentials, User>
         User user = maybeUser.get();
         String password = maybePassword.get();
         byte[] salt = maybeSalt.get();
-        if (!hashing.verify(credentials.getPassword(), salt, password)) {
+        if (!hasher.verify(credentials.getPassword(), salt, password)) {
             return Optional.empty();
         }
         return Optional.of(user);

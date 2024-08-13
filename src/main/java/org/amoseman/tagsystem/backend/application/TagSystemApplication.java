@@ -31,7 +31,7 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
         DatabaseInitializer initializer = new DatabaseInitializer(connection);
         initializer.init();
 
-        Hashing hashing = new Hashing(
+        Hasher hasher = new Hasher(
                 configuration.getPasswordHashLength(),
                 configuration.getPasswordSaltLength(),
                 new SecureRandom(),
@@ -43,7 +43,7 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
 
         TagDAO tagDAO = new SQLTagDAO(connection);
         EntityDAO entityDAO = new SQLEntityDAO(connection, tagDAO);
-        UserDAO userDAO = new SQLUserDAO(connection, hashing);
+        UserDAO userDAO = new SQLUserDAO(connection, hasher);
 
         UserService userService = new UserService(userDAO);
 
@@ -54,7 +54,7 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
         environment.jersey().register(entityResource);
         environment.jersey().register(userResource);
 
-        Authenticator<BasicCredentials, User> authenticator = new BasicAuthenticator(userDAO, hashing);
+        Authenticator<BasicCredentials, User> authenticator = new BasicAuthenticator(userDAO, hasher);
         Authorizer<User> authorizer = new BasicAuthorizer();
         environment.jersey().register(new AuthDynamicFeature(
                 new BasicCredentialAuthFilter.Builder<User>()
