@@ -31,7 +31,7 @@ public interface EntityDAO {
      * @param tags the IDs of the tags to retrieve by.
      * @return the entities retrieved.
      */
-    ImmutableList<String> retrieve(String owner, SelectOperator operator, ImmutableList<String> tags);
+    ImmutableList<String> retrieve(String owner, RetrievalOperator operator, ImmutableList<String> tags);
 
     /**
      * Add a tag to an entity.

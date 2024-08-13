@@ -10,7 +10,7 @@ import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.EntityDAO;
 import org.amoseman.tagsystem.backend.exception.entity.EntityNotOwnedException;
 import org.amoseman.tagsystem.backend.pojo.EntityRetrievalRequest;
-import org.amoseman.tagsystem.backend.dao.SelectOperator;
+import org.amoseman.tagsystem.backend.dao.RetrievalOperator;
 import org.amoseman.tagsystem.backend.exception.entity.EntityDoesNotExistException;
 import org.amoseman.tagsystem.backend.exception.tag.TagDoesNotExistException;
 
@@ -52,10 +52,10 @@ public class EntityResource {
     @PermitAll
     @Consumes(MediaType.APPLICATION_JSON)
     public Response retrieve(@Auth User user, EntityRetrievalRequest request) {
-        SelectOperator operator;
+        RetrievalOperator operator;
         switch (request.getOperator().toUpperCase(Locale.ROOT)) {
-            case "UNION" -> operator = SelectOperator.UNION;
-            case "INTERSECTION" -> operator = SelectOperator.INTERSECTION;
+            case "UNION" -> operator = RetrievalOperator.UNION;
+            case "INTERSECTION" -> operator = RetrievalOperator.INTERSECTION;
             default -> {
                 return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "invalid select operator").build();
             }

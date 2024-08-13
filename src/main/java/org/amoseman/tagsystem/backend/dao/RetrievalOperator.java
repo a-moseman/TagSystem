@@ -1,6 +1,6 @@
 package org.amoseman.tagsystem.backend.dao;
 
-public enum SelectOperator {
+public enum RetrievalOperator {
     UNION,
     INTERSECTION
 }

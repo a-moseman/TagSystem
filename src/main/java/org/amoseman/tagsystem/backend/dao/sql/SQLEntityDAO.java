@@ -5,7 +5,7 @@ import org.amoseman.tagsystem.backend.dao.TagDAO;
 import org.amoseman.tagsystem.backend.exception.entity.EntityNotOwnedException;
 import org.amoseman.tagsystem.backend.exception.tag.TagDoesNotExistException;
 import org.amoseman.tagsystem.backend.dao.EntityDAO;
-import org.amoseman.tagsystem.backend.dao.SelectOperator;
+import org.amoseman.tagsystem.backend.dao.RetrievalOperator;
 import org.amoseman.tagsystem.backend.exception.entity.EntityDoesNotExistException;
 import org.jooq.Condition;
 import org.jooq.Record;
@@ -70,7 +70,7 @@ public class SQLEntityDAO implements EntityDAO {
     }
 
     @Override
-    public ImmutableList<String> retrieve(String owner, SelectOperator operator, ImmutableList<String> tags) {
+    public ImmutableList<String> retrieve(String owner, RetrievalOperator operator, ImmutableList<String> tags) {
         ImmutableList<TagGroup> tagGroups = effectiveTags(tags);
         Condition condition = getCondition(owner, operator, tagGroups);
         Result<Record> result = connection.context()
@@ -107,7 +107,7 @@ public class SQLEntityDAO implements EntityDAO {
         group.add(tag);
     }
 
-    private Condition getCondition(String owner, SelectOperator operator, ImmutableList<TagGroup> groups) {
+    private Condition getCondition(String owner, RetrievalOperator operator, ImmutableList<TagGroup> groups) {
         Condition condition = switch (operator) {
             case UNION -> {
                 condition = DSL.falseCondition();
