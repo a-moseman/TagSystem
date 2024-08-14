@@ -57,6 +57,12 @@ public interface TagDAO {
      */
     ImmutableList<String> getChildren(String tag) throws TagDoesNotExistException;
 
+    /**
+     * Get all tags the provided tag inherits.
+     * @param tag the tag.
+     * @return all of the tags parents.
+     * @throws TagDoesNotExistException if the tag does not exist.
+     */
     ImmutableList<String> getParents(String tag) throws TagDoesNotExistException;
 
 

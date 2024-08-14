@@ -7,7 +7,6 @@ import java.security.SecureRandom;
 import static org.junit.jupiter.api.Assertions.*;
 
 class HasherTest {
-
     @Test
     void hash() {
         String password = "this_is_a_terrible_password";

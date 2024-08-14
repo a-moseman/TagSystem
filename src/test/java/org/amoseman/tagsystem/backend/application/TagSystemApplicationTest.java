@@ -144,6 +144,7 @@ class TagSystemApplicationTest {
     @Order(2)
     @Test
     void testEntityCRUD() {
+        // set up
         fetch.post("/tags/animal", noTest);
         fetch.post("/tags/mammal", noTest);
         fetch.post("/tags/feline", noTest);
@@ -151,7 +152,6 @@ class TagSystemApplicationTest {
         fetch.post("/tags/animal/mammal", noTest);
         fetch.post("/tags/mammal/feline", noTest);
         fetch.post("/tags/animal/reptile", noTest);
-
         // create
         String uuid = fetch.post("/entities", successTest);
         // update
