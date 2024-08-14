@@ -128,6 +128,26 @@ public class SQLEntityDAO implements EntityDAO {
         return condition.and(field("owner").eq(owner));
     }
 
+    private ImmutableList<String> allParents(String tag) throws TagDoesNotExistException {
+        ImmutableList<String> parents = tagDAO.getParents(tag);
+        List<String> list = new ArrayList<>();
+        for (String parent : parents) {
+            allParentsHelper(list, parent);
+        }
+        return ImmutableList.copyOf(list);
+    }
+
+    private void allParentsHelper(List<String> list, String tag) throws TagDoesNotExistException {
+        if (list.contains(tag)) {
+            return;
+        }
+        list.add(tag);
+        ImmutableList<String> parents = tagDAO.getParents(tag);
+        for (String parent : parents) {
+            allParentsHelper(list, parent);
+        }
+    }
+
     @Override
     public void addTag(String owner, String uuid, String tag) throws EntityDoesNotExistException, TagDoesNotExistException, EntityNotOwnedException, TagAlreadyOnEntityException {
         if (!owns(owner, uuid)) {
@@ -138,6 +158,12 @@ public class SQLEntityDAO implements EntityDAO {
         }
         if (getTags(owner, uuid).contains(tag)) {
             throw new TagAlreadyOnEntityException(uuid, tag);
+        }
+        ImmutableList<String> parents = allParents(tag);
+        ImmutableList<String> currentTags = getTags(owner, uuid);
+        List<String> toRemove = currentTags.stream().filter(parents::contains).toList();
+        for (String t : toRemove) {
+            removeTag(owner, uuid, t);
         }
         connection.context()
                 .insertInto(

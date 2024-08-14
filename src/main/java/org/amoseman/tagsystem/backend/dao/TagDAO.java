@@ -57,6 +57,8 @@ public interface TagDAO {
      */
     ImmutableList<String> getChildren(String tag) throws TagDoesNotExistException;
 
+    ImmutableList<String> getParents(String tag) throws TagDoesNotExistException;
+
 
     /**
      * List all tags.

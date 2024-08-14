@@ -82,12 +82,24 @@ public class SQLTagDAO implements TagDAO {
             if (child.equals(target)) {
                 return true;
             }
-            boolean recursion = isChild(child, target);
-            if (recursion) {
+            if (isChild(child, target)) {
                 return true;
             }
         }
         return false;
+    }
+
+    public ImmutableList<String> getParents(String tag) throws TagDoesNotExistException{
+        if (!exists(tag)) {
+            throw new TagDoesNotExistException(tag);
+        }
+        Result<Record> result = connection.context()
+                .selectFrom(table("tag_children"))
+                .where(field("child").eq(tag))
+                .fetch();
+        List<String> parents = new ArrayList<>();
+        result.forEach(record -> parents.add(record.get(field("parent", String.class))));
+        return ImmutableList.copyOf(parents);
     }
 
     @Override
