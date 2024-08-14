@@ -9,6 +9,7 @@ import io.dropwizard.auth.basic.BasicCredentials;
 import io.dropwizard.core.Application;
 import io.dropwizard.core.setup.Environment;
 import org.amoseman.tagsystem.backend.authentication.*;
+import org.amoseman.tagsystem.backend.dao.DatabaseInitializer;
 import org.amoseman.tagsystem.backend.dao.EntityDAO;
 import org.amoseman.tagsystem.backend.dao.TagDAO;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
@@ -28,8 +29,8 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
     @Override
     public void run(TagSystemConfiguration configuration, Environment environment) throws Exception {
         DatabaseConnection connection = DatabaseConnection.generate(configuration.getDatabaseURL());
-        DatabaseInitializer initializer = new DatabaseInitializer(connection);
-        initializer.init();
+        DatabaseInitializer initializer = new SQLDatabaseInitializer();
+        initializer.init(connection);
 
         Hasher hasher = new Hasher(
                 configuration.getPasswordHashLength(),

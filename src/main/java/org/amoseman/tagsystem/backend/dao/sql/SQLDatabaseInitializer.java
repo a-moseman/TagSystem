@@ -1,22 +1,26 @@
 package org.amoseman.tagsystem.backend.dao.sql;
 
+import org.amoseman.tagsystem.backend.dao.DatabaseInitializer;
+
 import static org.jooq.impl.DSL.*;
 import static org.jooq.impl.SQLDataType.*;
 
-public class DatabaseInitializer {
-    private final DatabaseConnection connection;
+/**
+ * A class for initializing a database.
+ */
+public class SQLDatabaseInitializer extends DatabaseInitializer {
 
-    public DatabaseInitializer(DatabaseConnection connection) {
-        this.connection = connection;
+    /**
+     * Initialize the database.
+     */
+    @Override
+    public void init(DatabaseConnection connection) {
+        initTagsTable(connection);
+        initEntitiesTable(connection);
+        initUsersTable(connection);
     }
 
-    public void init() {
-        initTagsTable();
-        initEntitiesTable();
-        initUsersTable();
-    }
-
-    private void initTagsTable() {
+    private void initTagsTable(DatabaseConnection connection) {
         connection.context()
                 .createTableIfNotExists("tags")
                 .column(field("name"), VARCHAR(32))
@@ -36,7 +40,7 @@ public class DatabaseInitializer {
                 .execute();
     }
 
-    private void initEntitiesTable() {
+    private void initEntitiesTable(DatabaseConnection connection) {
         connection.context()
                 .createTableIfNotExists("entities")
                 .column(field("owner"), VARCHAR(36))
@@ -59,7 +63,7 @@ public class DatabaseInitializer {
 
     }
 
-    private void initUsersTable() {
+    private void initUsersTable(DatabaseConnection connection) {
         connection.context()
                 .createTableIfNotExists("users")
                 .column(field("username"), VARCHAR(64))

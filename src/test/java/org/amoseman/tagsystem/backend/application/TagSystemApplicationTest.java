@@ -172,4 +172,18 @@ class TagSystemApplicationTest {
         fetch.delete(String.format("/entities/%s", uuid), successTest);
         fetch.delete(String.format("/entities/%s", uuid), failTest);
     }
+
+    @Order(3)
+    @Test
+    void testUserCRUD() {
+        // todo
+        fail();
+    }
+
+    @Order(4)
+    @Test
+    void testAuth() {
+        // todo
+        fail();
+    }
 }
