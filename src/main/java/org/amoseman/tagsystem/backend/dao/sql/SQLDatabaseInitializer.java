@@ -5,14 +5,7 @@ import org.amoseman.tagsystem.backend.dao.DatabaseInitializer;
 import static org.jooq.impl.DSL.*;
 import static org.jooq.impl.SQLDataType.*;
 
-/**
- * A class for initializing a database.
- */
 public class SQLDatabaseInitializer implements DatabaseInitializer {
-
-    /**
-     * Initialize the database.
-     */
     @Override
     public void init(DatabaseConnection connection) {
         initTagsTable(connection);
