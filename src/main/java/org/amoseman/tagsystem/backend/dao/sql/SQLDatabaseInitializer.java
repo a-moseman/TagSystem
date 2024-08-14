@@ -8,7 +8,7 @@ import static org.jooq.impl.SQLDataType.*;
 /**
  * A class for initializing a database.
  */
-public class SQLDatabaseInitializer extends DatabaseInitializer {
+public class SQLDatabaseInitializer implements DatabaseInitializer {
 
     /**
      * Initialize the database.
