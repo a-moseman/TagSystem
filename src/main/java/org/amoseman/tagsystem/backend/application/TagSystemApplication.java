@@ -50,7 +50,7 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
 
         TagResource tagResource = new TagResource(tagDAO);
         EntityResource entityResource = new EntityResource(entityDAO);
-        UserResource userResource = new UserResource(userService);
+        UserResource userResource = new UserResource(userService, userDAO);
         environment.jersey().register(tagResource);
         environment.jersey().register(entityResource);
         environment.jersey().register(userResource);

@@ -12,6 +12,7 @@ public class ApplicationHealthCheck extends HealthCheck {
 
     @Override
     protected Result check() throws Exception {
+        // todo: do a more proper health check
         if (connection.getConnection().isClosed()) {
             return Result.unhealthy("database connection is closed");
         }

@@ -1,6 +1,7 @@
 package org.amoseman.tagsystem.frontend;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -69,6 +70,19 @@ public class Fetch {
         HttpPost post = new HttpPost(formatRequest(request));
         post.addHeader("Authorization", auth);
         try {
+            return client.execute(post, handler);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String post(String request, String entity, ResponseHandler<String> handler) {
+        HttpPost post = new HttpPost(formatRequest(request));
+        post.addHeader("Authorization", auth);
+        post.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        try {
+            post.setEntity(new StringEntity(entity));
             return client.execute(post, handler);
         }
         catch (IOException e) {

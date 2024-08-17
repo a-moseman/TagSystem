@@ -10,5 +10,6 @@ public interface UserDAO {
     Optional<String> getPassword(String username);
     Optional<byte[]> getSalt(String username);
     void addUser(String username, String password);
+    void removeUser(String username) throws UserDoesNotExistException;
     void setRole(String username, String role) throws UserDoesNotExistException;
 }

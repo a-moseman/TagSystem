@@ -72,9 +72,21 @@ public class SQLUserDAO implements UserDAO {
         byte[] salt = hasher.salt();
         String hash = hasher.hash(password, salt);
         connection.context()
-                .insertInto(table("users"), field("username"), field("password"), field("salt"), field("roles"))
+                .insertInto(table("users"), field("username"), field("password"), field("salt"), field("role"))
                 .values(username, hash, Base64.getEncoder().encodeToString(salt), Roles.USER)
                 .execute();
+    }
+
+    @Override
+    public void removeUser(String username) throws UserDoesNotExistException {
+        int result = connection.context()
+                .deleteFrom(table("users"))
+                .where(field("username").eq(username))
+                .execute();
+        if (0 == result) {
+            throw new UserDoesNotExistException();
+        }
+
     }
 
     @Override

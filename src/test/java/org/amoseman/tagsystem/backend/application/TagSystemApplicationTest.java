@@ -176,8 +176,11 @@ class TagSystemApplicationTest {
     @Order(3)
     @Test
     void testUserCRUD() {
-        // todo
-        fail();
+        fetch.post("/users", "{\"username\": \"alice\", \"password\": \"bob\"}", successTest);
+        String requests = fetch.get("/users", successTest);
+        assertTrue(requests.contains("alice"));
+        fetch.post("/users/alice", successTest);
+        fetch.delete("/users/alice", successTest);
     }
 
     @Order(4)
