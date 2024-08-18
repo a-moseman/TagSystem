@@ -65,7 +65,7 @@ public class SQLDatabaseInitializer implements DatabaseInitializer {
                 .column(field("role"), VARCHAR(64))
                 .constraints(
                         primaryKey(field("username")),
-                        unique(field("username"))
+                        unique(field("username")) // todo: determine if redundant (may vary between databases)
                 )
                 .execute();
     }

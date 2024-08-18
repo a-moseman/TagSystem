@@ -9,6 +9,7 @@ import org.amoseman.tagsystem.backend.authentication.Roles;
 import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
 import org.amoseman.tagsystem.backend.exception.user.UserDoesNotExistException;
+import org.amoseman.tagsystem.backend.exception.user.UsernameAlreadyInUseException;
 import org.amoseman.tagsystem.backend.service.UserService;
 import org.amoseman.tagsystem.backend.service.UserCreationRequest;
 
@@ -33,8 +34,12 @@ public class UserResource {
     @Path("/{username}")
     @RolesAllowed({Roles.ADMIN})
     public Response accept(@Auth User user, @PathParam("username") String username) {
-        if (userService.acceptRequest(username)) {
-            return Response.ok().build();
+        try {
+            if (userService.acceptRequest(username)) {
+                return Response.ok().build();
+            }
+        } catch (UsernameAlreadyInUseException e) {
+            return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), String.format("the username %s is already in use", username)).build();
         }
         return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), String.format("no request corresponding to the provided username %s", username)).build();
     }

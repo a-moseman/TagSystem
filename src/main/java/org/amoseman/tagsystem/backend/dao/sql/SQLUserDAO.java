@@ -4,7 +4,9 @@ import org.amoseman.tagsystem.backend.authentication.Hasher;
 import org.amoseman.tagsystem.backend.authentication.Roles;
 import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
+import org.amoseman.tagsystem.backend.exception.user.InvalidRoleException;
 import org.amoseman.tagsystem.backend.exception.user.UserDoesNotExistException;
+import org.amoseman.tagsystem.backend.exception.user.UsernameAlreadyInUseException;
 import org.jooq.Record;
 import org.jooq.Result;
 
@@ -34,47 +36,49 @@ public class SQLUserDAO implements UserDAO {
     }
 
     @Override
-    public Optional<User> getUser(String username) {
+    public User getUser(String username) throws UserDoesNotExistException {
         Record record = getRecord(username);
         if (null == record) {
-            return Optional.empty();
+            throw new UserDoesNotExistException(username);
         }
         String usernameString = record.get(field("username"), String.class);
         String[] rolesString = record.get(field("role"), String.class).split(",");
         Set<String> roles = new HashSet<>(List.of(rolesString));
-        User user = new User(usernameString, roles);
-        return Optional.of(user);
+        return new User(usernameString, roles);
     }
 
     @Override
-    public Optional<String> getPassword(String username) {
+    public String getPassword(String username) throws UserDoesNotExistException {
         Record record = getRecord(username);
         if (null == record) {
-            return Optional.empty();
+            throw new UserDoesNotExistException(username);
         }
-        String password = record.get(field("password"), String.class);
-        return Optional.of(password);
+        return record.get(field("password"), String.class);
     }
 
     @Override
-    public Optional<byte[]> getSalt(String username) {
+    public byte[] getSalt(String username) throws UserDoesNotExistException {
         Record record = getRecord(username);
         if (null == record) {
-            return Optional.empty();
+            throw new UserDoesNotExistException(username);
         }
         String saltString = record.get(field("salt"), String.class);
-        byte[] salt = Base64.getDecoder().decode(saltString);
-        return Optional.of(salt);
+        return Base64.getDecoder().decode(saltString);
     }
 
     @Override
-    public void addUser(String username, String password) {
+    public void addUser(String username, String password) throws UsernameAlreadyInUseException {
         byte[] salt = hasher.salt();
         String hash = hasher.hash(password, salt);
-        connection.context()
-                .insertInto(table("users"), field("username"), field("password"), field("salt"), field("role"))
-                .values(username, hash, Base64.getEncoder().encodeToString(salt), Roles.USER)
-                .execute();
+        try {
+            connection.context()
+                    .insertInto(table("users"), field("username"), field("password"), field("salt"), field("role"))
+                    .values(username, hash, Base64.getEncoder().encodeToString(salt), Roles.USER)
+                    .execute();
+        }
+        catch (Exception e) {
+            throw new UsernameAlreadyInUseException(username);
+        }
     }
 
     @Override
@@ -84,20 +88,23 @@ public class SQLUserDAO implements UserDAO {
                 .where(field("username").eq(username))
                 .execute();
         if (0 == result) {
-            throw new UserDoesNotExistException();
+            throw new UserDoesNotExistException(username);
         }
 
     }
 
     @Override
-    public void setRole(String username, String role) throws UserDoesNotExistException {
+    public void setRole(String username, String role) throws UserDoesNotExistException, InvalidRoleException {
+        if (!Roles.isValid(role)) {
+            throw new InvalidRoleException(username, role);
+        }
         int result = connection.context()
                 .update(table("users"))
                 .set(field("role"), role)
                 .where(field("username").eq(username))
                 .execute();
         if (0 == result) {
-            throw new UserDoesNotExistException();
+            throw new UserDoesNotExistException(username);
         }
     }
 }

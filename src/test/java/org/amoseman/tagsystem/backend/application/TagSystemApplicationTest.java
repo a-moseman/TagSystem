@@ -186,6 +186,11 @@ class TagSystemApplicationTest {
     @Order(4)
     @Test
     void testAuth() {
+        fetch.post("/users", "{\"username\": \"alice\", \"password\": \"bob\"}", noTest);
+        fetch.post("/users/alice", noTest);
+        Fetch userFetch = new Fetch()
+                .setDomain("http://127.0.0.1:8080")
+                .setAuth("alice", "bob");
         // todo
         fail();
     }

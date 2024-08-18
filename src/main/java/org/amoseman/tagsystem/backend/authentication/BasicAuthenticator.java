@@ -4,6 +4,7 @@ import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
 import io.dropwizard.auth.basic.BasicCredentials;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
+import org.amoseman.tagsystem.backend.exception.user.UserDoesNotExistException;
 
 import java.util.Optional;
 
@@ -18,19 +19,20 @@ public class BasicAuthenticator implements Authenticator<BasicCredentials, User>
 
     @Override
     public Optional<User> authenticate(BasicCredentials credentials) throws AuthenticationException {
-        Optional<User> maybeUser = userDAO.getUser(credentials.getUsername());
-        if (maybeUser.isEmpty()) {
+        User user;
+        String expectedPassword;
+        byte[] salt;
+        try {
+            String username = credentials.getUsername();
+            user = userDAO.getUser(username);
+            expectedPassword = userDAO.getPassword(username);
+            salt = userDAO.getSalt(username);
+        }
+        catch (UserDoesNotExistException e) {
             return Optional.empty();
         }
-        Optional<String> maybePassword = userDAO.getPassword(credentials.getUsername());
-        Optional<byte[]> maybeSalt = userDAO.getSalt(credentials.getUsername());
-        if (maybePassword.isEmpty() || maybeSalt.isEmpty()) {
-            return Optional.empty();
-        }
-        User user = maybeUser.get();
-        String password = maybePassword.get();
-        byte[] salt = maybeSalt.get();
-        if (!hasher.verify(credentials.getPassword(), salt, password)) {
+        String attemptedPassword = credentials.getPassword();
+        if (!hasher.verify(attemptedPassword, salt, expectedPassword)) {
             return Optional.empty();
         }
         return Optional.of(user);
