@@ -1,6 +1,5 @@
 package org.amoseman.tagsystem.frontend;
 
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpDelete;
@@ -11,7 +10,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
