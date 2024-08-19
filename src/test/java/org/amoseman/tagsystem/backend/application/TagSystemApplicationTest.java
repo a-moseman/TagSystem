@@ -3,7 +3,6 @@ package org.amoseman.tagsystem.backend.application;
 import org.amoseman.tagsystem.backend.authentication.Argon2IDConfig;
 import org.amoseman.tagsystem.backend.authentication.Hasher;
 import org.amoseman.tagsystem.frontend.Fetch;
-import org.apache.http.client.ResponseHandler;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;

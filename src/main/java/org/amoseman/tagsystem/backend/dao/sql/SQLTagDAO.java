@@ -122,7 +122,6 @@ public class SQLTagDAO implements TagDAO {
         catch (Exception e) {
             throw new TagIsAlreadyChildException(child, parent);
         }
-
     }
 
     @Override
