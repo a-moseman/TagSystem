@@ -3,9 +3,7 @@ package org.amoseman.tagsystem.backend.application;
 import org.amoseman.tagsystem.backend.authentication.Argon2IDConfig;
 import org.amoseman.tagsystem.backend.authentication.Hasher;
 import org.amoseman.tagsystem.frontend.Fetch;
-import org.apache.http.StatusLine;
 import org.apache.http.client.ResponseHandler;
-import org.apache.http.util.EntityUtils;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -76,33 +74,9 @@ class TagSystemApplicationTest {
         runApplication();
         initializeAdmin();
     }
-
-    private static ResponseHandler<String> successTest = response -> {
-        StatusLine line = response.getStatusLine();
-        int code = line.getStatusCode();
-        boolean condition = code < 299;
-        String result = EntityUtils.toString(response.getEntity());
-        if (!condition) {
-            System.err.println(line.getReasonPhrase());
-            System.err.println(result);
-        }
-
-        assertTrue(condition);
-        return result;
-    };
-
-    private static ResponseHandler<String> failTest = response -> {
-        StatusLine line = response.getStatusLine();
-        int code = line.getStatusCode();
-        boolean condition = code < 299;
-        if (condition) {
-            System.err.println(line.getReasonPhrase());
-        }
-        assertFalse(condition);
-        return EntityUtils.toString(response.getEntity());
-    };
-
-    private static ResponseHandler<String> noTest = response -> EntityUtils.toString(response.getEntity());
+    private static ResponseHandler<String> successTest = new ResponseTest((code) -> code < 299).handle();
+    private static ResponseHandler<String> failTest = new ResponseTest((code) -> code > 299).handle();
+    private static ResponseHandler<String> noTest = new ResponseTest((code) -> true).handle();
 
     private static Fetch fetch = new Fetch()
             .setDomain("http://127.0.0.1:8080")
@@ -186,12 +160,40 @@ class TagSystemApplicationTest {
     @Order(4)
     @Test
     void testAuth() {
-        fetch.post("/users", "{\"username\": \"alice\", \"password\": \"bob\"}", noTest);
+        new Fetch().setDomain("http://127.0.0.1:8080").post("/users", "{\"username\": \"alice\", \"password\": \"bob\"}", successTest);
         fetch.post("/users/alice", noTest);
         Fetch userFetch = new Fetch()
                 .setDomain("http://127.0.0.1:8080")
                 .setAuth("alice", "bob");
         // todo
         fail();
+    }
+
+    @Order(5)
+    @Test
+    void testAuthNoCredentials() {
+        ResponseHandler<String> authFailTest = new ResponseTest((code) -> 401 == code).handle();
+
+        String entity = fetch.post("/entities", noTest);
+        fetch.post("/tags/a", noTest);
+        fetch.post("/tags/b", noTest);
+        fetch.post(String.format("/entities/%s/a", entity), noTest);
+
+        Fetch userlessFetch = new Fetch()
+                .setDomain("http://127.0.0.1:8080");
+        userlessFetch.post("/entities", authFailTest);
+        userlessFetch.delete(String.format("/entities/%s", entity), authFailTest);
+
+        userlessFetch.post("/tags/example_tag", authFailTest);
+        userlessFetch.post("/tags/a/b", authFailTest);
+        fetch.post("/tags/a/b", noTest);
+        userlessFetch.delete("/tags/a/b", authFailTest);
+        userlessFetch.get("/tags/a", authFailTest);
+        userlessFetch.delete("/tags/a", authFailTest);
+
+        userlessFetch.post(String.format("/entities/%s/b", entity), authFailTest);
+        userlessFetch.delete(String.format("/entities/%s/a", entity), authFailTest);
+        userlessFetch.get(String.format("/entities/%s", entity), authFailTest);
+        userlessFetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"a\"]\n" + "}", authFailTest);
     }
 }
