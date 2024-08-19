@@ -60,18 +60,15 @@ public class Fetch {
     }
 
     /**
-     * Adds the authorization header to the provided request, if any credentials have been provided.
+     * Execute a request.
      * @param base the request.
+     * @param handler the response handler.
+     * @return the result.
      */
-    private void handleAuth(HttpRequestBase base) {
-        if (null == auth) {
-            return;
-        }
-        base.addHeader("Authorization", auth);
-    }
-
     private String exec(HttpRequestBase base, ResponseHandler<String> handler) {
-        handleAuth(base);
+        if (null != auth) {
+            base.addHeader("Authorization", auth);
+        }
         try {
             return client.execute(base, handler);
         }
@@ -80,6 +77,34 @@ public class Fetch {
         }
     }
 
+    private StringEntity tryAsEntity(String string) {
+        try {
+            return new StringEntity(string);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void trySetEntity(HttpRequestBase base, Class<?> clazz, StringEntity entity) {
+        if (clazz.equals(HttpGetWithEntity.class)) {
+            HttpGetWithEntity get = (HttpGetWithEntity) base;
+            get.setEntity(entity);
+        }
+        else if (clazz.equals(HttpPost.class)) {
+            HttpPost post = (HttpPost) base;
+            post.setEntity(entity);
+        }
+        else {
+            throw new RuntimeException("Invalid request type");
+        }
+    }
+
+    private String exec(HttpRequestBase base, Class<?> clazz, String entityString, ResponseHandler<String> handler) {
+        StringEntity entity = tryAsEntity(entityString);
+        trySetEntity(base, clazz, entity);
+        return exec(base, handler);
+    }
 
     public String get(String request, ResponseHandler<String> handler) {
         HttpGet get = new HttpGet(formatRequest(request));
@@ -89,13 +114,7 @@ public class Fetch {
     public String get(String request, String entity, ResponseHandler<String> handler) {
         HttpGetWithEntity get = new HttpGetWithEntity();
         get.setURI(URI.create(formatRequest(request)));
-        try {
-            get.setEntity(new StringEntity(entity));
-        }
-        catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-        return exec(get, handler);
+        return exec(get, get.getClass(), entity, handler);
 
     }
 
@@ -107,13 +126,7 @@ public class Fetch {
     public String post(String request, String entity, ResponseHandler<String> handler) {
         HttpPost post = new HttpPost(formatRequest(request));
         post.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        try {
-            post.setEntity(new StringEntity(entity));
-        }
-        catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-        return exec(post, handler);
+        return exec(post, post.getClass(), entity, handler);
     }
 
     public String delete(String request, ResponseHandler<String> handler) {
