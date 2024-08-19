@@ -62,7 +62,7 @@ public class SQLEntityDAO implements EntityDAO {
                 .where(field("uuid").eq(uuid))
                 .execute();
         if (0 == result) {
-            throw new EntityDoesNotExistException();
+            throw new EntityDoesNotExistException(uuid);
         }
         connection.context()
                 .deleteFrom(table("entity_tags"))
@@ -193,7 +193,7 @@ public class SQLEntityDAO implements EntityDAO {
                 .where(field("tag").eq(tag).and(field("entity").eq(uuid)))
                 .execute();
         if (0 == result) {
-            throw new EntityDoesNotExistException();
+            throw new EntityDoesNotExistException(uuid);
         }
     }
 
