@@ -6,6 +6,10 @@ import org.apache.http.util.EntityUtils;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+/**
+ * Encapsulates testing of responses to HTTP requests.
+ */
+
 public class ResponseTest {
     public static final ResponseTest SUCCESS = new ResponseTest(code -> code < 299);
     public static final ResponseTest FAILURE = new ResponseTest(code -> code > 399 && code < 499);
@@ -13,10 +17,18 @@ public class ResponseTest {
     public static final ResponseTest NONE = new ResponseTest(code -> true);
     private final TestCondition condition;
 
+    /**
+     * Instantiate a response test.
+     * @param condition the condition to test.
+     */
     public ResponseTest(TestCondition condition) {
         this.condition = condition;
     }
 
+    /**
+     * Generate a response handler from the response test.
+     * @return the response handler.
+     */
     public ResponseHandler<String> handle() {
         return response -> {
             StatusLine line = response.getStatusLine();
