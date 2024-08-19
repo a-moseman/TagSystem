@@ -120,7 +120,7 @@ public class SQLTagDAO implements TagDAO {
                     .execute();
         }
         catch (Exception e) {
-            throw new TagIsAlreadyChildException();
+            throw new TagIsAlreadyChildException(child, parent);
         }
 
     }
