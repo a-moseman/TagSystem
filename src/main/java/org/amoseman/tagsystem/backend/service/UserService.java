@@ -2,12 +2,10 @@ package org.amoseman.tagsystem.backend.service;
 
 import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
-import org.amoseman.tagsystem.backend.exception.user.UserDoesNotExistException;
 import org.amoseman.tagsystem.backend.exception.user.UsernameAlreadyInUseException;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public class UserService {
@@ -35,7 +33,7 @@ public class UserService {
         if (!requests.containsKey(username)) {
             return false;
         }
-        String password = requests.get(username);
+        String password = requests.remove(username);
         userDAO.addUser(username, password);
         return true;
     }

@@ -74,11 +74,12 @@ class TagSystemApplicationTest {
         runApplication();
         initializeAdmin();
     }
-    private static ResponseHandler<String> successTest = new ResponseTest((code) -> code < 299).handle();
-    private static ResponseHandler<String> failTest = new ResponseTest((code) -> code > 299).handle();
-    private static ResponseHandler<String> noTest = new ResponseTest((code) -> true).handle();
+    private static final ResponseHandler<String> successTest = new ResponseTest((code) -> code < 299).handle();
+    private static final ResponseHandler<String> failTest = new ResponseTest((code) -> code > 299).handle();
+    private static final ResponseHandler<String> noTest = new ResponseTest((code) -> true).handle();
+    private static final ResponseHandler<String> authFailTest = new ResponseTest((code) -> 401 == code).handle();
 
-    private static Fetch fetch = new Fetch()
+    private static final Fetch admin = new Fetch()
             .setDomain("http://127.0.0.1:8080")
             .setAuth("admin", "admin");
 
@@ -86,98 +87,109 @@ class TagSystemApplicationTest {
     @Test
     void testTagCRUD() {
         // create
-        fetch.post("/tags/animal", successTest);
-        fetch.post("/tags/mammal", successTest);
-        fetch.post("/tags/feline", successTest);
-        fetch.post("/tags/animal", failTest);
-        fetch.post("/tags/mammal", failTest);
-        fetch.post("/tags/feline", failTest);
+        admin.post("/tags/animal", successTest);
+        admin.post("/tags/mammal", successTest);
+        admin.post("/tags/feline", successTest);
+        admin.post("/tags/animal", failTest);
+        admin.post("/tags/mammal", failTest);
+        admin.post("/tags/feline", failTest);
         // update
-        fetch.post("/tags/animal/mammal", successTest);
-        fetch.post("/tags/mammal/feline", successTest);
-        fetch.post("/tags/animal/mammal", failTest);
-        fetch.post("/tags/mammal/feline", failTest);
+        admin.post("/tags/animal/mammal", successTest);
+        admin.post("/tags/mammal/feline", successTest);
+        admin.post("/tags/animal/mammal", failTest);
+        admin.post("/tags/mammal/feline", failTest);
         // update - inheritance loop
-        fetch.post("/tags/mammal/animal", failTest);
-        fetch.post("/tags/feline/animal", failTest);
+        admin.post("/tags/mammal/animal", failTest);
+        admin.post("/tags/feline/animal", failTest);
         // retrieve
-        String children = fetch.get("/tags/animal", successTest);
+        String children = admin.get("/tags/animal", successTest);
         assertTrue(children.contains("mammal"));
         assertFalse(children.contains("feline"));
-        children = fetch.get("/tags/mammal", successTest);
+        children = admin.get("/tags/mammal", successTest);
         assertTrue(children.contains("feline"));
         // delete
-        fetch.delete("/tags/animal", successTest);
-        fetch.delete("/tags/mammal", successTest);
-        fetch.delete("/tags/feline", successTest);
-        fetch.delete("/tags/animal", failTest);
-        fetch.delete("/tags/mammal", failTest);
-        fetch.delete("/tags/feline", failTest);
+        admin.delete("/tags/animal", successTest);
+        admin.delete("/tags/mammal", successTest);
+        admin.delete("/tags/feline", successTest);
+        admin.delete("/tags/animal", failTest);
+        admin.delete("/tags/mammal", failTest);
+        admin.delete("/tags/feline", failTest);
     }
 
     @Order(2)
     @Test
     void testEntityCRUD() {
         // set up
-        fetch.post("/tags/animal", noTest);
-        fetch.post("/tags/mammal", noTest);
-        fetch.post("/tags/feline", noTest);
-        fetch.post("/tags/reptile", noTest);
-        fetch.post("/tags/animal/mammal", noTest);
-        fetch.post("/tags/mammal/feline", noTest);
-        fetch.post("/tags/animal/reptile", noTest);
+        admin.post("/tags/animal", noTest);
+        admin.post("/tags/mammal", noTest);
+        admin.post("/tags/feline", noTest);
+        admin.post("/tags/reptile", noTest);
+        admin.post("/tags/animal/mammal", noTest);
+        admin.post("/tags/mammal/feline", noTest);
+        admin.post("/tags/animal/reptile", noTest);
         // create
-        String uuid = fetch.post("/entities", successTest);
+        String uuid = admin.post("/entities", successTest);
         // update
-        fetch.post(String.format("/entities/%s/mammal", uuid), successTest);
-        fetch.post(String.format("/entities/%s/mammal", uuid), failTest);
-        fetch.post(String.format("/entities/%s/feline", uuid), successTest); // should replace mammal with feline, as feline is more "specific"
-        String tags = fetch.get(String.format("/entities/%s", uuid), successTest);
+        admin.post(String.format("/entities/%s/mammal", uuid), successTest);
+        admin.post(String.format("/entities/%s/mammal", uuid), failTest);
+        admin.post(String.format("/entities/%s/feline", uuid), successTest); // should replace mammal with feline, as feline is more "specific"
+        String tags = admin.get(String.format("/entities/%s", uuid), successTest);
         assertFalse(tags.contains("mammal"));
         assertTrue(tags.contains("feline"));
         // retrieve
-        String retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"animal\"]\n" + "}", successTest);
+        String retrieval = admin.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"animal\"]\n" + "}", successTest);
         assertTrue(retrieval.contains(uuid));
-        retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"mammal\"]\n" + "}", successTest);
+        retrieval = admin.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"mammal\"]\n" + "}", successTest);
         assertTrue(retrieval.contains(uuid));
-        retrieval = fetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"reptile\"]\n" + "}", successTest);
+        retrieval = admin.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"reptile\"]\n" + "}", successTest);
         assertFalse(retrieval.contains(uuid));
         // delete
-        fetch.delete(String.format("/entities/%s", uuid), successTest);
-        fetch.delete(String.format("/entities/%s", uuid), failTest);
+        admin.delete(String.format("/entities/%s", uuid), successTest);
+        admin.delete(String.format("/entities/%s", uuid), failTest);
     }
 
     @Order(3)
     @Test
     void testUserCRUD() {
-        fetch.post("/users", "{\"username\": \"alice\", \"password\": \"bob\"}", successTest);
-        String requests = fetch.get("/users", successTest);
-        assertTrue(requests.contains("alice"));
-        fetch.post("/users/alice", successTest);
-        fetch.delete("/users/alice", successTest);
+        new Fetch().setDomain("http://127.0.0.1:8080").post("/users", "{\"username\": \"alice\", \"password\": \"bob\"}", successTest);
+        String pending = admin.get("/users", successTest);
+        assertTrue(pending.contains("alice"));
+        admin.post("/users/alice", successTest);
+        pending = admin.get("/users", successTest);
+        assertFalse(pending.contains("alice"));
+        admin.delete("/users/alice", successTest);
     }
 
     @Order(4)
     @Test
-    void testAuth() {
-        new Fetch().setDomain("http://127.0.0.1:8080").post("/users", "{\"username\": \"alice\", \"password\": \"bob\"}", successTest);
-        fetch.post("/users/alice", noTest);
-        Fetch userFetch = new Fetch()
+    void testInvalidCredentials() {
+        new Fetch().setDomain("http://127.0.0.1:8080").post("/users", "{\"username\": \"alice\", \"password\": \"password\"}", noTest);
+        new Fetch().setDomain("http://127.0.0.1:8080").post("/users", "{\"username\": \"bob\", \"password\": \"password\"}", noTest);
+        admin.post("/users/alice", noTest);
+        admin.post("/users/bob", noTest);
+
+        Fetch alice = new Fetch()
                 .setDomain("http://127.0.0.1:8080")
-                .setAuth("alice", "bob");
-        // todo
-        fail();
+                .setAuth("alice", "password");
+        Fetch bob = new Fetch()
+                .setDomain("http://127.0.0.1:8080")
+                .setAuth("bob", "password");
+
+        String entity = alice.post("/entities", successTest);
+        bob.get(String.format("/entities/%s", entity), authFailTest);
+        admin.post("/tags/example", successTest);
+        bob.post(String.format("/entities/%s/example", entity), authFailTest);
+        alice.post(String.format("/entities/%s/example", entity), successTest);
+        bob.delete(String.format("/entities/%s/example", entity), authFailTest);
     }
 
     @Order(5)
     @Test
     void testAuthNoCredentials() {
-        ResponseHandler<String> authFailTest = new ResponseTest((code) -> 401 == code).handle();
-
-        String entity = fetch.post("/entities", noTest);
-        fetch.post("/tags/a", noTest);
-        fetch.post("/tags/b", noTest);
-        fetch.post(String.format("/entities/%s/a", entity), noTest);
+        String entity = admin.post("/entities", noTest);
+        admin.post("/tags/a", noTest);
+        admin.post("/tags/b", noTest);
+        admin.post(String.format("/entities/%s/a", entity), noTest);
 
         Fetch userlessFetch = new Fetch()
                 .setDomain("http://127.0.0.1:8080");
@@ -186,7 +198,7 @@ class TagSystemApplicationTest {
 
         userlessFetch.post("/tags/example_tag", authFailTest);
         userlessFetch.post("/tags/a/b", authFailTest);
-        fetch.post("/tags/a/b", noTest);
+        admin.post("/tags/a/b", noTest);
         userlessFetch.delete("/tags/a/b", authFailTest);
         userlessFetch.get("/tags/a", authFailTest);
         userlessFetch.delete("/tags/a", authFailTest);

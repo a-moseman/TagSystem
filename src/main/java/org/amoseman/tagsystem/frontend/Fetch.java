@@ -11,6 +11,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -48,7 +49,8 @@ public class Fetch {
      */
     public Fetch setAuth(String username, String password) {
         String joined = String.format("%s:%s", username, password);
-        String base64 = Base64.getEncoder().encodeToString(joined.getBytes(StandardCharsets.UTF_8));
+        byte[] bytes = joined.getBytes(StandardCharsets.UTF_8);
+        String base64 = Base64.getEncoder().encodeToString(bytes);
         this.auth = String.format("Basic %s", base64);
         return this;
     }
@@ -68,63 +70,54 @@ public class Fetch {
         base.addHeader("Authorization", auth);
     }
 
-
-    public String get(String request, ResponseHandler<String> handler) {
-        HttpGet get = new HttpGet(formatRequest(request));
-        handleAuth(get);
+    private String exec(HttpRequestBase base, ResponseHandler<String> handler) {
+        handleAuth(base);
         try {
-            return client.execute(get, handler);
+            return client.execute(base, handler);
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+    public String get(String request, ResponseHandler<String> handler) {
+        HttpGet get = new HttpGet(formatRequest(request));
+        return exec(get, handler);
     }
 
     public String get(String request, String entity, ResponseHandler<String> handler) {
         HttpGetWithEntity get = new HttpGetWithEntity();
-        handleAuth(get);
         get.setURI(URI.create(formatRequest(request)));
         try {
             get.setEntity(new StringEntity(entity));
-            return client.execute(get, handler);
         }
-        catch (IOException e) {
+        catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+        return exec(get, handler);
+
     }
 
     public String post(String request, ResponseHandler<String> handler) {
         HttpPost post = new HttpPost(formatRequest(request));
-        handleAuth(post);
-        try {
-            return client.execute(post, handler);
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return exec(post, handler);
     }
 
     public String post(String request, String entity, ResponseHandler<String> handler) {
         HttpPost post = new HttpPost(formatRequest(request));
-        handleAuth(post);
         post.addHeader(HttpHeaders.CONTENT_TYPE, "application/json");
         try {
             post.setEntity(new StringEntity(entity));
-            return client.execute(post, handler);
         }
-        catch (IOException e) {
+        catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+        return exec(post, handler);
     }
 
     public String delete(String request, ResponseHandler<String> handler) {
         HttpDelete delete = new HttpDelete(formatRequest(request));
-        handleAuth(delete);
-        try {
-            return client.execute(delete, handler);
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return exec(delete, handler);
     }
 }
