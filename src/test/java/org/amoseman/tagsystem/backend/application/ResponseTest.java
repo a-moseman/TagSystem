@@ -3,12 +3,14 @@ package org.amoseman.tagsystem.backend.application;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.util.EntityUtils;
-import org.junit.jupiter.api.Assertions;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ResponseTest {
+    public static final ResponseTest SUCCESS = new ResponseTest(code -> code < 299);
+    public static final ResponseTest FAILURE = new ResponseTest(code -> code > 399 && code < 499);
+    public static final ResponseTest AUTH_FAILURE = new ResponseTest(code -> 401 == code);
+    public static final ResponseTest NONE = new ResponseTest(code -> true);
     private final TestCondition condition;
 
     public ResponseTest(TestCondition condition) {
