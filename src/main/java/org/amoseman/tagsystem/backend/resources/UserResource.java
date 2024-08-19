@@ -11,7 +11,7 @@ import org.amoseman.tagsystem.backend.dao.UserDAO;
 import org.amoseman.tagsystem.backend.exception.user.UserDoesNotExistException;
 import org.amoseman.tagsystem.backend.exception.user.UsernameAlreadyInUseException;
 import org.amoseman.tagsystem.backend.service.UserService;
-import org.amoseman.tagsystem.backend.service.UserCreationRequest;
+import org.amoseman.tagsystem.backend.pojo.UserCreationRequest;
 
 @Path("/users")
 @Produces(MediaType.APPLICATION_JSON)

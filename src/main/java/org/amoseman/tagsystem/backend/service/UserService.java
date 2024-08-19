@@ -1,8 +1,8 @@
 package org.amoseman.tagsystem.backend.service;
 
-import org.amoseman.tagsystem.backend.authentication.User;
 import org.amoseman.tagsystem.backend.dao.UserDAO;
 import org.amoseman.tagsystem.backend.exception.user.UsernameAlreadyInUseException;
+import org.amoseman.tagsystem.backend.pojo.UserCreationRequest;
 
 import java.util.HashMap;
 import java.util.Map;
