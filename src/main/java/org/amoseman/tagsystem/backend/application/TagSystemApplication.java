@@ -21,6 +21,10 @@ import org.amoseman.tagsystem.backend.service.UserService;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 
 import java.security.SecureRandom;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class TagSystemApplication extends Application<TagSystemConfiguration> {
     public static void main(String... args) throws Exception {
@@ -28,9 +32,15 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
     }
     @Override
     public void run(TagSystemConfiguration configuration, Environment environment) throws Exception {
+        Logger logger = Logger.getGlobal();
+        logger.addHandler(new ConsoleHandler());
+        logger.setLevel(Level.ALL);
+
         DatabaseConnection connection = DatabaseConnection.generate(configuration.getDatabaseURL());
         DatabaseInitializer initializer = new SQLDatabaseInitializer();
         initializer.init(connection);
+
+        logger.info("Connected to database");
 
         Hasher hasher = new Hasher(
                 configuration.getPasswordHashLength(),
@@ -69,7 +79,8 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
         environment.jersey().register(RolesAllowedDynamicFeature.class);
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(User.class));
 
-
         environment.healthChecks().register("application", new ApplicationHealthCheck(connection));
+
+        logger.info("Started tag system");
     }
 }
