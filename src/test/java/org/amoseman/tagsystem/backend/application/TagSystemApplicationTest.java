@@ -152,6 +152,13 @@ class TagSystemApplicationTest {
         pending = admin.get("/users", ResponseTest.SUCCESS.handle());
         assertFalse(pending.contains("alice"));
         admin.delete("/users/alice", ResponseTest.SUCCESS.handle());
+
+        new Fetch().setDomain("http://127.0.0.1:8080").post("/users", "{\"username\": \"username\", \"password\": \"password\"}", ResponseTest.SUCCESS.handle());
+        admin.post("/users/username", ResponseTest.SUCCESS.handle());
+        new Fetch().setDomain("http://127.0.0.1:8080").post("/users", "{\"username\": \"other\", \"password\": \"other\"}", ResponseTest.SUCCESS.handle());
+        admin.post("/users/other", ResponseTest.SUCCESS.handle());
+        new Fetch().setDomain("http://127.0.0.1:8080").setAuth("other", "password").delete("/users/username", ResponseTest.UNAUTHORIZED.handle());
+        new Fetch().setDomain("http://127.0.0.1:8080").setAuth("username", "password").delete("/users/username", ResponseTest.SUCCESS.handle());
     }
 
     @Order(4)
@@ -170,11 +177,11 @@ class TagSystemApplicationTest {
                 .setAuth("bob", "password");
 
         String entity = alice.post("/entities", ResponseTest.SUCCESS.handle());
-        bob.get(String.format("/entities/%s", entity), ResponseTest.AUTH_FAILURE.handle());
+        bob.get(String.format("/entities/%s", entity), ResponseTest.UNAUTHORIZED.handle());
         admin.post("/tags/example", ResponseTest.SUCCESS.handle());
-        bob.post(String.format("/entities/%s/example", entity), ResponseTest.AUTH_FAILURE.handle());
+        bob.post(String.format("/entities/%s/example", entity), ResponseTest.UNAUTHORIZED.handle());
         alice.post(String.format("/entities/%s/example", entity), ResponseTest.SUCCESS.handle());
-        bob.delete(String.format("/entities/%s/example", entity), ResponseTest.AUTH_FAILURE.handle());
+        bob.delete(String.format("/entities/%s/example", entity), ResponseTest.UNAUTHORIZED.handle());
     }
 
     @Order(5)
@@ -187,19 +194,19 @@ class TagSystemApplicationTest {
 
         Fetch userlessFetch = new Fetch()
                 .setDomain("http://127.0.0.1:8080");
-        userlessFetch.post("/entities", ResponseTest.AUTH_FAILURE.handle());
-        userlessFetch.delete(String.format("/entities/%s", entity), ResponseTest.AUTH_FAILURE.handle());
+        userlessFetch.post("/entities", ResponseTest.UNAUTHORIZED.handle());
+        userlessFetch.delete(String.format("/entities/%s", entity), ResponseTest.UNAUTHORIZED.handle());
 
-        userlessFetch.post("/tags/example_tag", ResponseTest.AUTH_FAILURE.handle());
-        userlessFetch.post("/tags/a/b", ResponseTest.AUTH_FAILURE.handle());
+        userlessFetch.post("/tags/example_tag", ResponseTest.UNAUTHORIZED.handle());
+        userlessFetch.post("/tags/a/b", ResponseTest.UNAUTHORIZED.handle());
         admin.post("/tags/a/b", ResponseTest.NONE.handle());
-        userlessFetch.delete("/tags/a/b", ResponseTest.AUTH_FAILURE.handle());
-        userlessFetch.get("/tags/a", ResponseTest.AUTH_FAILURE.handle());
-        userlessFetch.delete("/tags/a", ResponseTest.AUTH_FAILURE.handle());
+        userlessFetch.delete("/tags/a/b", ResponseTest.UNAUTHORIZED.handle());
+        userlessFetch.get("/tags/a", ResponseTest.UNAUTHORIZED.handle());
+        userlessFetch.delete("/tags/a", ResponseTest.UNAUTHORIZED.handle());
 
-        userlessFetch.post(String.format("/entities/%s/b", entity), ResponseTest.AUTH_FAILURE.handle());
-        userlessFetch.delete(String.format("/entities/%s/a", entity), ResponseTest.AUTH_FAILURE.handle());
-        userlessFetch.get(String.format("/entities/%s", entity), ResponseTest.AUTH_FAILURE.handle());
-        userlessFetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"a\"]\n" + "}", ResponseTest.AUTH_FAILURE.handle());
+        userlessFetch.post(String.format("/entities/%s/b", entity), ResponseTest.UNAUTHORIZED.handle());
+        userlessFetch.delete(String.format("/entities/%s/a", entity), ResponseTest.UNAUTHORIZED.handle());
+        userlessFetch.get(String.format("/entities/%s", entity), ResponseTest.UNAUTHORIZED.handle());
+        userlessFetch.get("/entities", "{\n" + "\t\"operator\": \"INTERSECTION\",\n" + "\t\"tags\": [\"a\"]\n" + "}", ResponseTest.UNAUTHORIZED.handle());
     }
 }

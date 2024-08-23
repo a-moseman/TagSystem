@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class ResponseTest {
     public static final ResponseTest SUCCESS = new ResponseTest(code -> code < 299);
     public static final ResponseTest FAILURE = new ResponseTest(code -> code > 399 && code < 499);
-    public static final ResponseTest AUTH_FAILURE = new ResponseTest(code -> 401 == code);
+    public static final ResponseTest UNAUTHORIZED = new ResponseTest(code -> 401 == code);
     public static final ResponseTest NONE = new ResponseTest(code -> true);
     private final TestCondition condition;
 

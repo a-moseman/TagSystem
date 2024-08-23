@@ -3,6 +3,7 @@ package org.amoseman.tagsystem.backend.resources;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.auth.Auth;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -60,8 +61,11 @@ public class UserResource {
 
     @DELETE
     @Path("/{username}")
-    @RolesAllowed({Roles.ADMIN})
+    @PermitAll
     public Response delete(@Auth User user, @PathParam("username") String username) {
+        if (!user.getName().equals(username) && !user.getRoles().contains(Roles.ADMIN)) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
         meter.mark();
         try {
             userDAO.removeUser(username);
