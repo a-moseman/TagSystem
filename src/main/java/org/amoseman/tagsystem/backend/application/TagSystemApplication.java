@@ -1,5 +1,7 @@
 package org.amoseman.tagsystem.backend.application;
 
+import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
 import io.dropwizard.auth.Authenticator;
@@ -21,6 +23,7 @@ import org.amoseman.tagsystem.backend.service.UserService;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 
 import java.security.SecureRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -35,6 +38,13 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
         Logger logger = Logger.getGlobal();
         logger.addHandler(new ConsoleHandler());
         logger.setLevel(Level.ALL);
+
+        MetricRegistry metrics = new MetricRegistry();
+        ConsoleReporter reporter = ConsoleReporter.forRegistry(metrics)
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build();
+        reporter.start(30, TimeUnit.SECONDS);
 
         DatabaseConnection connection = DatabaseConnection.generate(configuration.getDatabaseURL());
         DatabaseInitializer initializer = new SQLDatabaseInitializer();
@@ -58,9 +68,9 @@ public class TagSystemApplication extends Application<TagSystemConfiguration> {
 
         UserService userService = new UserService(userDAO);
 
-        TagResource tagResource = new TagResource(tagDAO);
-        EntityResource entityResource = new EntityResource(entityDAO);
-        UserResource userResource = new UserResource(userService, userDAO);
+        TagResource tagResource = new TagResource(tagDAO, metrics);
+        EntityResource entityResource = new EntityResource(entityDAO, metrics);
+        UserResource userResource = new UserResource(userService, userDAO, metrics);
 
         environment.jersey().register(tagResource);
         environment.jersey().register(entityResource);

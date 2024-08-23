@@ -1,5 +1,7 @@
 package org.amoseman.tagsystem.backend.resources;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import io.dropwizard.auth.Auth;
 import jakarta.annotation.security.PermitAll;
@@ -22,16 +24,19 @@ import java.util.logging.Logger;
 @Produces(MediaType.APPLICATION_JSON)
 public class EntityResource {
     private final EntityDAO entityDAO;
+    private final Meter meter;
     private final Logger logger;
 
-    public EntityResource(EntityDAO entityDAO) {
+    public EntityResource(EntityDAO entityDAO, MetricRegistry metrics) {
         this.entityDAO = entityDAO;
+        this.meter = metrics.meter("entity-requests");
         this.logger = Logger.getGlobal();
     }
 
     @POST
     @PermitAll
     public Response createEntity(@Auth User user) {
+        meter.mark();
         String uuid = entityDAO.create(user.getName());
         logger.info(String.format("User %s created entity %s", user.getName(), uuid));
         return Response.ok(uuid).build();
@@ -41,6 +46,7 @@ public class EntityResource {
     @Path("/{uuid}")
     @PermitAll
     public Response deleteEntity(@Auth User user, @PathParam("uuid") String uuid) {
+        meter.mark();
         try {
             entityDAO.remove(user.getName(), uuid);
             logger.info(String.format("User %s removed entity %s", user.getName(), uuid));
@@ -61,6 +67,7 @@ public class EntityResource {
     @PermitAll
     @Consumes(MediaType.APPLICATION_JSON)
     public Response retrieve(@Auth User user, EntityRetrievalRequest request) {
+        meter.mark();
         RetrievalOperator operator;
         String op = request.getOperator().toUpperCase(Locale.ROOT);
         switch (op) {
@@ -79,6 +86,7 @@ public class EntityResource {
     @POST
     @Path("/{uuid}/{tag}")
     public Response addTag(@Auth User user, @PathParam("uuid") String uuid, @PathParam("tag") String tag) {
+        meter.mark();
         try {
             entityDAO.addTag(user.getName(), uuid, tag);
             logger.info(String.format("User %s added tag %s to entity %s", user.getName(), tag, uuid));
@@ -105,6 +113,7 @@ public class EntityResource {
     @DELETE
     @Path("/{uuid}/{tag}")
     public Response removeTag(@Auth User user, @PathParam("uuid") String uuid, @PathParam("tag") String tag) {
+        meter.mark();
         try {
             entityDAO.removeTag(user.getName(), uuid, tag);
             logger.info(String.format("User %s removed tag %s from entity %s", user.getName(), tag, uuid));
@@ -128,6 +137,7 @@ public class EntityResource {
     @Path("/{uuid}")
     @PermitAll
     public Response getTags(@Auth User user, @PathParam("uuid") String uuid) {
+        meter.mark();
         try {
             ImmutableList<String> tags = entityDAO.getTags(user.getName(), uuid);
             logger.info(String.format("User %s retrieved tags for entity %s", user.getName(), uuid));

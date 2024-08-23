@@ -1,5 +1,7 @@
 package org.amoseman.tagsystem.backend.resources;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import io.dropwizard.auth.Auth;
 import jakarta.annotation.security.PermitAll;
@@ -19,10 +21,12 @@ import java.util.logging.Logger;
 public class TagResource {
     private static final Response TAG_DNE = Response.status(Response.Status.BAD_REQUEST.getStatusCode(), "tag does not exist").build();
     private final TagDAO tagDAO;
+    private final Meter meter;
     private final Logger logger;
 
-    public TagResource(TagDAO tagDAO) {
+    public TagResource(TagDAO tagDAO, MetricRegistry metrics) {
         this.tagDAO = tagDAO;
+        this.meter = metrics.meter("tag-requests");
         this.logger = Logger.getGlobal();
     }
 
@@ -30,6 +34,7 @@ public class TagResource {
     @Path("/{name}")
     @RolesAllowed({Roles.ADMIN})
     public Response createTag(@Auth User user, @PathParam("name") String name) {
+        meter.mark();
         try {
             tagDAO.create(name);
             logger.info(String.format("User %s created tag %s", user.getName(), name));
@@ -45,6 +50,7 @@ public class TagResource {
     @Path("/{name}")
     @RolesAllowed({Roles.ADMIN})
     public Response deleteTag(@Auth User user, @PathParam("name") String name) {
+        meter.mark();
         try {
             tagDAO.delete(name);
             logger.info(String.format("User %s deleted tag %s", user.getName(), name));
@@ -60,6 +66,7 @@ public class TagResource {
     @Path("/{parent}/{child}")
     @RolesAllowed({Roles.ADMIN})
     public Response addChild(@Auth User user, @PathParam("parent") String parent, @PathParam("child") String child) {
+        meter.mark();
         try {
             tagDAO.addChild(parent, child);
             logger.info(String.format("User %s set tag %s to inherit tag %s", user.getName(), child, parent));
@@ -83,6 +90,7 @@ public class TagResource {
     @Path("/{parent}/{child}")
     @RolesAllowed({Roles.ADMIN})
     public Response removeChild(@Auth User user, @PathParam("name") String parent, @PathParam("child") String child) {
+        meter.mark();
         try {
             logger.info(String.format("User %s removed inheritance of tag %s of tag %s", user.getName(), child, parent));
             tagDAO.removeChild(parent, child);
@@ -102,6 +110,7 @@ public class TagResource {
     @Path("/{name}")
     @PermitAll
     public Response getChildren(@Auth User user, @PathParam("name") String name) {
+        meter.mark();
         try {
             logger.info(String.format("User %s received the tags that inherit tag %s", user.getName(), name));
             return Response.ok(tagDAO.getChildren(name)).build();
@@ -115,6 +124,7 @@ public class TagResource {
     @GET
     @PermitAll
     public Response list(@Auth User user) {
+        meter.mark();
         ImmutableList<String> tags = tagDAO.listAll();
         logger.info(String.format("User %s requested all tags", user.getName()));
         return Response.ok(tags).build();

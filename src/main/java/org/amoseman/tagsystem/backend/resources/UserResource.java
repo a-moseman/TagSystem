@@ -1,5 +1,7 @@
 package org.amoseman.tagsystem.backend.resources;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.auth.Auth;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
@@ -20,16 +22,19 @@ import java.util.logging.Logger;
 public class UserResource {
     private final UserService userService;
     private final UserDAO userDAO;
+    private final Meter meter;
     private final Logger logger;
 
-    public UserResource(UserService userService, UserDAO userDAO) {
+    public UserResource(UserService userService, UserDAO userDAO, MetricRegistry metrics) {
         this.userService = userService;
         this.userDAO = userDAO;
+        this.meter = metrics.meter("user-requests");
         this.logger = Logger.getGlobal();
     }
 
     @POST
     public Response request(UserCreationRequest request) {
+        meter.mark();
         userService.request(request);
         logger.info(String.format("Request for account creation of %s", request.username()));
         return Response.accepted().build();
@@ -39,6 +44,7 @@ public class UserResource {
     @Path("/{username}")
     @RolesAllowed({Roles.ADMIN})
     public Response accept(@Auth User user, @PathParam("username") String username) {
+        meter.mark();
         try {
             if (userService.acceptRequest(username)) {
                 logger.info(String.format("Admin %s accepted account creation request of %s", user.getName(), username));
@@ -56,6 +62,7 @@ public class UserResource {
     @Path("/{username}")
     @RolesAllowed({Roles.ADMIN})
     public Response delete(@Auth User user, @PathParam("username") String username) {
+        meter.mark();
         try {
             userDAO.removeUser(username);
             logger.info(String.format("Admin %s deleted account %s", user.getName(), username));
@@ -70,6 +77,7 @@ public class UserResource {
     @GET
     @RolesAllowed({Roles.ADMIN})
     public Response listRequests(@Auth User user) {
+        meter.mark();
         logger.info(String.format("Admin %s requested a list of all pending account creation requests", user.getName()));
         return Response.ok(userService.listRequests()).build();
     }

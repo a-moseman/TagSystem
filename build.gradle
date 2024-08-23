@@ -26,6 +26,8 @@ dependencies {
     implementation 'io.dropwizard:dropwizard-core:5.0.0-alpha.1'
     // https://mvnrepository.com/artifact/io.dropwizard/dropwizard-auth
     implementation 'io.dropwizard:dropwizard-auth:5.0.0-alpha.1'
+    // https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-core
+    implementation 'io.dropwizard.metrics:metrics-core:4.2.27'
     // https://mvnrepository.com/artifact/com.google.guava/guava
     implementation 'com.google.guava:guava:33.2.1-jre'
     // https://mvnrepository.com/artifact/org.jooq/jooq
