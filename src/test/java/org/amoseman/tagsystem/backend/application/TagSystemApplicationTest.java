@@ -157,8 +157,12 @@ class TagSystemApplicationTest {
         admin.post("/users/username", ResponseTest.SUCCESS.handle());
         new Fetch().setDomain("http://127.0.0.1:8080").post("/users", "{\"username\": \"other\", \"password\": \"other\"}", ResponseTest.SUCCESS.handle());
         admin.post("/users/other", ResponseTest.SUCCESS.handle());
-        new Fetch().setDomain("http://127.0.0.1:8080").setAuth("other", "password").delete("/users/username", ResponseTest.UNAUTHORIZED.handle());
-        new Fetch().setDomain("http://127.0.0.1:8080").setAuth("username", "password").delete("/users/username", ResponseTest.SUCCESS.handle());
+
+        Fetch username = new Fetch().setDomain("http://127.0.0.1:8080").setAuth("username", "password");
+        Fetch other = new Fetch().setDomain("http://127.0.0.1:8080").setAuth("other", "password");
+
+        other.delete("/users/username", ResponseTest.UNAUTHORIZED.handle());
+        username.delete("/users/username", ResponseTest.SUCCESS.handle());
     }
 
     @Order(4)

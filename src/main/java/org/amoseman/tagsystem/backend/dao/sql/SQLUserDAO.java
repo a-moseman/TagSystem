@@ -90,7 +90,18 @@ public class SQLUserDAO implements UserDAO {
         if (0 == result) {
             throw new UserDoesNotExistException(username);
         }
+        deleteUserEntities(username);
+    }
 
+    private void deleteUserEntities(String username) {
+        connection.context()
+                .deleteFrom(table("entities"))
+                .where(field("owner").eq(username))
+                .execute();
+        connection.context()
+                .deleteFrom(table("entity_tags"))
+                .where(field("owner").eq(username))
+                .execute();
     }
 
     @Override
